@@ -8,7 +8,8 @@ const { errorMsg } = require('../utils/utils')
  */
 const whitelist = [
   '/register/account/register',
-  '/register/account/login'
+  '/register/account/login',
+  '/register/account/update'
 ]
 
 /**

@@ -38,16 +38,33 @@ let unique = async function(db, table, field, param) {
   return new Promise(async (resolve, reject) => {
     const result = await query(db, sql, [param])
     if (Array.isArray(result)) {
-  console.log(result.length)
-      resolve(result.length)
+      resolve(result)
     } else {
-      reject(1)
+      reject(false)
     }
   })
+}
+
+/**
+ * 生成更新语句
+ */
+let generateUpdateClause = function(table, obj) {
+  let sql = `UPDATE ${table} SET `
+  let clause = ''
+  Object.keys(obj).map(item => {
+    if (typeof obj[item] === 'string') {
+      clause += `${item}='${obj[item]}', `
+    } else {
+      clause += `${item}=${obj[item]}, `
+    }
+  })
+  clause = clause.slice(0, -2)
+  return sql + clause
 }
 
 module.exports =  {
   query,
   limit: 10,
-  unique
+  unique,
+  generateUpdateClause
 }

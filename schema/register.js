@@ -19,7 +19,15 @@ const accountRegisterSchema = Joi.object().keys({
   answer: Joi.string().required()
 })
 
+/**
+ * 更新账户校验
+ */
+const accountUpdateSchema = Joi.object().keys({
+  uuid: Joi.string().required()
+})
+
 module.exports = {
   accountListSchema,
-  accountRegisterSchema
+  accountRegisterSchema,
+  accountUpdateSchema
 }
