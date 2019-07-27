@@ -26,8 +26,17 @@ const accountUpdateSchema = Joi.object().keys({
   uuid: Joi.string().required()
 })
 
+/**
+ * 登录校验
+ */
+const accountLogin = Joi.object().keys({
+  nickname: Joi.string().required(),
+  pwd: Joi.string().required()
+})
+
 module.exports = {
   accountListSchema,
   accountRegisterSchema,
-  accountUpdateSchema
+  accountUpdateSchema,
+  accountLogin
 }
