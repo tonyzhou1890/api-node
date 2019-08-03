@@ -56,6 +56,12 @@ const errorMsg = (obj, param) => {
     case 35:
       obj.errorMsg = '此账号没有相关权限'
       break
+    case 40:
+      obj.errorMsg = '记录不存在'
+      break
+    case 50:
+      obj.errorMsg = '此应用订阅人数已达上限'
+      break
     default:
       obj.errorMsg = '未知错误'
       break;

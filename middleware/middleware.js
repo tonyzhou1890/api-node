@@ -4,6 +4,7 @@ const { collection } = require('../utils/database')
 const { query } = require('../utils/query')
 const { errorMsg } = require('../utils/utils')
 const { TypePermission } = require('../utils/setting')
+const humps = require('humps')
 
 /**
  * token验证白名单
@@ -32,7 +33,7 @@ const valiToken = async (req, res, next) => {
     const sql = 'SELECT * FROM accounts WHERE token = ?'
     const result = await query(collection, sql, req.headers.token)
     if (Array.isArray(result) && result.length) {
-      req.__record = result[0]
+      req.__record = humps.camelizeKeys(result[0])
       return next()
     } else {
       r.code = 31

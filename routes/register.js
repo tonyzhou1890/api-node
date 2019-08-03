@@ -4,11 +4,12 @@ const mysql = require('mysql')
 const Joi = require('joi')
 const uuidv1 = require('uuid/v1')
 const moment = require('moment')
+const humps = require('humps')
 
 const { dbOptions, collection } = require('../utils/database')
-const { query, limit, unique, generateUpdateClause } = require('../utils/query')
+const { query, limit, unique, generateUpdateClause, isUpdateSuccess } = require('../utils/query')
 const { errorMsg, strToImageFile, sizeOfBase64 } = require('../utils/utils')
-const { accountListSchema, accountRegisterSchema, accountUpdateSchema, accountLogin } = require('../schema/register')
+const { accountListSchema, accountRegisterSchema, accountUpdateSchema, accountLoginSchema, accountUpdateAppsSchema, appCreateSchema, appUpdateSchema } = require('../schema/register')
 const { LoginExpireTime, RegisterAccountType } = require('../utils/setting')
 
 /* GET register listing. */
@@ -24,14 +25,27 @@ router.post('/account/list', async (req, res, next) => {
     const params = {
       page: req.body.rows && req.body.page || 1,
       rows: req.body.page && req.body.rows || limit,
-      name: req.body.name || ''
+      name: req.body.name || '',
+      type: req.body.type
     }
+
+    let condition = ''
+    if (params.name) {
+      condition += ` WHERE nickname LIKE %${params.name}%`
+    }
+    if (params.type) {
+      if (condition) {
+        condition += ' AND'
+      }
+      condition += ` WHERE type = ${params.type}`
+    }
+
     const start = (params.page - 1) * params.rows
-    const sql = `SELECT uuid, nickname, avatar, register_time FROM accounts LIMIT ${start}, ${params.rows}`
+    const sql = `SELECT uuid, nickname, avatar, register_time FROM accounts${condition} LIMIT ${start}, ${params.rows}`
     const result = await query(collection, sql)
     if (Array.isArray(result)) {
       response = errorMsg({ code: 0 })
-      response.data = result
+      response.data = humps.camelizeKeys(result)
     } else {
       response = errorMsg({ code: 2 })
     }
@@ -90,7 +104,7 @@ router.post('/account/update', async (req, res, next) => {
     
     // 没有重复则继续
     if (response.code === undefined) {
-      const fields = ['nickname', 'pwd', 'avatar', 'gender', 'birth', 'type', 'apps', 'disabled', 'logout']
+      const fields = ['nickname', 'pwd', 'question', 'answer', 'avatar', 'gender', 'birth']
       const temp = {}
       fields.map(item => {
         if (req.body[item] !== undefined) {
@@ -134,7 +148,7 @@ router.post('/account/update', async (req, res, next) => {
  */
 router.post('/account/login', async (req, res, next) => {
   let response = {}
-  const vali = Joi.validate(req.body, accountLogin, {allowUnknown: true})
+  const vali = Joi.validate(req.body, accountLoginSchema, {allowUnknown: true})
   if (vali.error) {
     response = errorMsg({ code: 24 }, vali.error.details[0].message)
   } else {
@@ -142,7 +156,7 @@ router.post('/account/login', async (req, res, next) => {
     const result = await query(collection, sql)
     if (Array.isArray(result)) {
       if (result.length) {
-        const record = result[0]
+        const record = humps.camelizeKeys(result[0])
         // 如果账号已经注销，结束请求
         if (record.logout) {
           response = errorMsg({ code: 34 })
@@ -154,7 +168,7 @@ router.post('/account/login', async (req, res, next) => {
           token = record.token || token
         }
         const loginTime = moment().format('YYYY-MM-DD HH:mm:ss')
-        const lastLoginTime = record.login_time ? moment(record.login_time).format('YYYY-MM-DD HH:mm:ss') : null
+        const lastLoginTime = record.loginTime ? moment(record.loginTime).format('YYYY-MM-DD HH:mm:ss') : null
         const expire = moment(moment().valueOf() + LoginExpireTime).format('YYYY-MM-DD HH:mm:ss')
         const updateSql = `UPDATE accounts SET 
           login_time = '${loginTime}',
@@ -199,8 +213,7 @@ router.post('/account/logout', async (req, res, next) => {
       let updateSql = `UPDATE accounts SET 
         token = '' 
         WHERE token = '${req.headers.token}';`
-      const updateResult = await query(collection, updateSql)
-      if (typeof result === 'object' && result.affectedRows) {
+      if (isUpdateSuccess(await query(collection, updateSql))) {
         response = errorMsg({ code: 0 })
       } else {
         response = errorMsg({ code: 4 })
@@ -216,12 +229,12 @@ router.post('/account/logout', async (req, res, next) => {
 /**
  * 账户详情
  */
-router.post('/account/detail', async(req, res, next) => {
+router.post('/account/detail', async (req, res, next) => {
   let response = {}
   let sql = `SELECT * from accounts WHERE token = '${req.headers.token}';`
   const result = await query(collection, sql)
   if (Array.isArray(result) && result.length) {
-    const record = result[0]
+    const record = humps.camelizeKeys(result[0])
     delete record.pwd
     delete record.id
 
@@ -234,5 +247,184 @@ router.post('/account/detail', async(req, res, next) => {
   return res.send(response)
 })
 
+/**
+ * 更新订阅应用
+ */
+router.post('/account/updateApps', async (req, res, next) => {
+  let response = {}
+  const vali = Joi.validate(req.body, accountUpdateAppsSchema, {allowUnknown: true})
+  if (vali.error) {
+    response = errorMsg({ code: 24 }, vali.error.details[0].message)
+  } else {
+    let sql = `SELECT accounts, accounts_limit FROM apps WHERE uuid = '${req.body.app}'`
+    const result = await query(collection, sql)
+    if (Array.isArray(result)) {
+      if (result.length) {
+        const record = humps.camelizeKeys(result[0])
+        let updateSql = ''
+        let updateResult = ''
+        // 取消订阅
+        if (!req.body.type) {
+          record.accounts -= 1
+        } else {
+          // 增加订阅
+          if (record.accounts >= record.accountsLimit &&record.accountsLimit > 0) {
+            response = errorMsg({ code: 50 })
+            return res.send(response)
+          } else {
+            record.accounts += 1
+          }
+        }
+        // 更新应用表
+        updateSql = `UPDATE apps SET
+          accounts = '${record.accounts}'
+          WHERE uuid = '${req.body.app}'`
+        // 更新应用表成功
+        if (isUpdateSuccess(await query(collection, updateSql))) {
+          // 更新用户表
+          updateSql = `UPDATE accounts SET
+            apps = '${req.body.apps}'
+            WHERE uuid = '${req.__record.uuid}'`
+            // 更新账户应用列表成功
+          if (isUpdateSuccess(await query(collection, updateSql))) {
+            response = errorMsg({ code: 0 })
+          } else {
+            // 更新账户应用列表失败
+            response = errorMsg({ code: 4 })
+          }
+        } else {
+          // 更新应用表失败
+          response = errorMsg({ code: 4 })
+        }
+      } else {
+        response = errorMsg({ code: 40 })
+      }
+    } else {
+      response = errorMsg({ code: 2 })
+    }
+  }
+  return res.send(response)
+})
+
+/**
+ * 应用列表
+ */
+router.post('/apps/list', async (req, res, next) => {
+  let response = {}
+  const sql = `SELECT uuid, name, summary, link, icon, register_time, accounts, accounts_limit FROM apps`
+  const result = await query(collection, sql)
+  if (Array.isArray(result)) {
+    response = errorMsg({ code: 0 })
+    response.data = humps.camelizeKeys(result)
+  } else {
+    response = errorMsg({ code: 2 })
+  }
+  return res.send(response);
+});
+
+/**
+ * 注册应用
+ */
+router.post('/apps/create', async (req, res, next) => {
+  let response = {}
+  const vali = Joi.validate(req.body, appCreateSchema, {allowUnknown: true})
+  if (vali.error) {
+    response = errorMsg({ code: 24 }, vali.error.details[0].message)
+  } else {
+    const u = await unique(collection, 'apps', 'name', req.body.name)
+    if (!u.length) {
+
+      // 判断文件大小
+      if (sizeOfBase64(req.body.icon, 64).oversize) {
+        response = errorMsg({ code: 24 }, '图片大小不能超过64k')
+        return res.send(response)
+      }
+      // 存储图片
+      const fileName = req.body.iconName ? req.body.iconName + Date.now() : Date.now()
+      const processImageRes = await strToImageFile('../store/images/apps/', fileName, req.body.icon)
+      if (processImageRes.status) {
+        req.body.icon = processImageRes.path.replace(/^..\/store/, '')
+      } else {
+        response = errorMsg({ code: 24, errorData: processImageRes.errorMsg }, '后台图像处理错误')
+        return res.send(response)
+      }
+
+      const uuid = uuidv1()
+      const accounts = 0
+      const registerTime = moment().format('YYYY-MM-DD HH:mm:ss')
+      const sql = `INSERT INTO apps (uuid, name, summary, link, icon, related_domain, register_time, accounts, accounts_limit, temp_account, hidden)
+      VALUES
+      ('${uuid}', '${req.body.name}', '${req.body.summary}', '${req.body.link}', '${req.body.icon}', '${req.body.relatedDomain}', '${registerTime}', '${accounts}', '${req.body.accountsLimit}', '${req.body.tempAccount}', ${req.body.hidden})
+      `
+      const result = await query(collection, sql)
+      if (typeof result === 'object' && result.insertId) {
+        response = errorMsg({ code: 0 })
+      } else {
+        response = errorMsg({ code: 3 })
+      }
+    } else {
+      response = errorMsg({ code: 24 }, '应用名称重复')
+    }
+  }
+  return res.send(response);
+});
+
+/**
+ * 更新应用
+ */
+router.post('/apps/update', async (req, res, next) => {
+  let response = {}
+  const vali = Joi.validate(req.body, appUpdateSchema, {allowUnknown: true})
+  if (vali.error) {
+    response = errorMsg({ code: 24 }, vali.error.details[0].message)
+  } else {
+    // 如果有 name，检查是否除自身外有重复
+    if (req.body.name) {
+      const u = await unique(collection, 'apps', 'name', req.body.name)
+      if (u.some(item => item.name === req.body.name && item.uuid !== req.body.uuid)) {
+        response = errorMsg({ code: 24 }, '应用名称重复')
+      }
+    }
+    
+    // 没有重复则继续
+    if (response.code === undefined) {
+      const fields = ['name', 'summary', 'link', 'icon', 'relatedDomain', 'accountsLimit', 'tempAccount', 'hidden']
+      const temp = {}
+      fields.map(item => {
+        if (req.body[item] !== undefined) {
+          temp[item] = req.body[item]
+        }
+      })
+
+      // 图片处理
+      if (temp.icon) {
+        // 判断文件大小
+        if (sizeOfBase64(temp.icon, 64).oversize) {
+          response = errorMsg({ code: 24 }, '图片大小不能超过64k')
+          return res.send(response)
+        }
+        // 存储图片
+        const fileName = req.body.iconName ? req.body.iconName + Date.now() : Date.now()
+        const processImageRes = await strToImageFile('../store/images/apps/', fileName, temp.icon)
+        if (processImageRes.status) {
+          temp.icon = processImageRes.path.replace(/^..\/store/, '')
+        } else {
+          response = errorMsg({ code: 24, errorData: processImageRes.errorMsg }, '后台图像处理错误')
+          return res.send(response)
+        }
+      }
+
+      let sql = generateUpdateClause('apps', temp)
+      sql += ` WHERE uuid = '${req.body.uuid}'`
+      const result = await query(collection, sql)
+      if (typeof result === 'object' && result.affectedRows) {
+        response = errorMsg({ code: 0 })
+      } else {
+        response = errorMsg({ code: 4 })
+      }
+    }
+  }
+  return res.send(response);
+});
 
 module.exports = router;

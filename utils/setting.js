@@ -29,6 +29,14 @@ const TypePermission = [
   {
     path: '/register/account/list',
     type: [2]
+  },
+  {
+    path: '/register/account/updateApps',
+    type: [1, 2]
+  },
+  {
+    path: '/register/apps/create',
+    type: [2]
   }
 ]
 

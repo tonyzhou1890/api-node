@@ -1,4 +1,5 @@
 const mysql = require('mysql')
+const humps = require('humps')
 const { dbOptions } = require('./database')
 
 // 接收一个sql语句 以及所需的values
@@ -53,18 +54,26 @@ let generateUpdateClause = function(table, obj) {
   let clause = ''
   Object.keys(obj).map(item => {
     if (typeof obj[item] === 'string') {
-      clause += `${item}='${obj[item]}', `
+      clause += `${humps.decamelize(item)}='${obj[item]}', `
     } else {
-      clause += `${item}=${obj[item]}, `
+      clause += `${humps.decamelize(item)}=${obj[item]}, `
     }
   })
   clause = clause.slice(0, -2)
   return sql + clause
 }
 
+/**
+ * 更新是否成功
+ */
+let isUpdateSuccess = function(result) {
+  return typeof result === 'object' && result.affectedRows
+}
+
 module.exports =  {
   query,
   limit: 10,
   unique,
-  generateUpdateClause
+  generateUpdateClause,
+  isUpdateSuccess
 }
