@@ -9,7 +9,7 @@ const humps = require('humps')
 const { dbOptions, collection } = require('../utils/database')
 const { query, limit, unique, generateUpdateClause, isUpdateSuccess } = require('../utils/query')
 const { errorMsg, strToImageFile, sizeOfBase64 } = require('../utils/utils')
-const { accountListSchema, accountRegisterSchema, accountUpdateSchema, accountLoginSchema, accountUpdateAppsSchema, appCreateSchema, appUpdateSchema } = require('../schema/register')
+const { accountListSchema, accountRegisterSchema, accountUpdateSchema, accountPermissionSchema, accountLoginSchema, accountUpdateAppsSchema, appCreateSchema, appUpdateSchema } = require('../schema/register')
 const { LoginExpireTime, RegisterAccountType } = require('../utils/setting')
 
 /* GET register listing. */
@@ -25,13 +25,13 @@ router.post('/account/list', async (req, res, next) => {
     const params = {
       page: req.body.rows && req.body.page || 1,
       rows: req.body.page && req.body.rows || limit,
-      name: req.body.name || '',
+      nickname: req.body.nickname || '',
       type: req.body.type
     }
 
     let condition = ''
-    if (params.name) {
-      condition += ` WHERE nickname LIKE %${params.name}%`
+    if (params.nickname) {
+      condition += ` WHERE nickname LIKE '%${params.nickname}%'`
     }
     if (params.type) {
       if (condition) {
@@ -41,11 +41,16 @@ router.post('/account/list', async (req, res, next) => {
     }
 
     const start = (params.page - 1) * params.rows
-    const sql = `SELECT uuid, nickname, avatar, register_time FROM accounts${condition} LIMIT ${start}, ${params.rows}`
+    const sql = `SELECT uuid, nickname, avatar, gender, register_time, login_time, type, disabled, logout FROM accounts${condition} LIMIT ${start}, ${params.rows}`
     const result = await query(collection, sql)
-    if (Array.isArray(result)) {
+
+    const countSql = `SELECT COUNT(uuid) FROM accounts${condition}`
+    const countResult = await query(collection, countSql)
+    console.log(countResult)
+    if (Array.isArray(result) && Array.isArray(countResult) && countResult.length) {
       response = errorMsg({ code: 0 })
       response.data = humps.camelizeKeys(result)
+      response.total = countResult[0]['COUNT(uuid)']
     } else {
       response = errorMsg({ code: 2 })
     }
@@ -144,6 +149,47 @@ router.post('/account/update', async (req, res, next) => {
 });
 
 /**
+ * 更新账户权限
+ */
+router.post('/account/updatePermission', async (req, res, next) => {
+  let response = {}
+  const vali = Joi.validate(req.body, accountPermissionSchema, {allowUnknown: true})
+  if (vali.error) {
+    response = errorMsg({ code: 24 }, vali.error.details[0].message)
+  } else {
+    const u = await unique(collection, 'accounts', 'uuid', req.body.uuid)
+
+    if (u.length === 0) {
+      response = errorMsg({ code: 40 })
+      return res.send(response)
+    } else {
+      let field = ''
+      if (req.body.type !== null && req.body.type !== undefined) {
+        field = `type = ${req.body.type}`
+      } else if (req.body.disabled != null && req.body.disabled !== undefined) {
+        field = `disabled = ${req.body.disabled}`
+      } else if (req.body.logout != null && req.body.logout !== undefined) {
+        field = `logout = ${req.body.logout}`
+      }
+
+      if (!field) {
+        response = errorMsg({ code: 0 })
+        return res.send(response)
+      } else {
+        let sql = `UPDATE accounts SET ${field} WHERE uuid = '${req.body.uuid}'`
+        const result = await query(collection, sql)
+        if (typeof result === 'object' && result.affectedRows) {
+          response = errorMsg({ code: 0 })
+        } else {
+          response = errorMsg({ code: 4 })
+        }
+      }
+    }
+  }
+  return res.send(response);
+});
+
+/**
  * 登录
  */
 router.post('/account/login', async (req, res, next) => {
@@ -176,7 +222,6 @@ router.post('/account/login', async (req, res, next) => {
           expire = '${expire}',
           token = '${token}' 
           WHERE uuid = '${record.uuid}';`
-        console.log(lastLoginTime)
         const updateResult = await query(collection, updateSql)
         if (typeof updateResult === 'object' && updateResult.affectedRows) {
           response = errorMsg({
@@ -311,7 +356,7 @@ router.post('/account/updateApps', async (req, res, next) => {
  */
 router.post('/apps/list', async (req, res, next) => {
   let response = {}
-  const sql = `SELECT uuid, name, summary, link, icon, register_time, accounts, accounts_limit FROM apps`
+  const sql = `SELECT uuid, name, summary, link, icon, register_time, accounts, accounts_limit, related_domain, hidden FROM apps`
   const result = await query(collection, sql)
   if (Array.isArray(result)) {
     response = errorMsg({ code: 0 })

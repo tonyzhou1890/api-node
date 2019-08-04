@@ -33,6 +33,16 @@ const accountUpdateSchema = Joi.object().keys({
 })
 
 /**
+ * 更新账户权限
+ */
+const accountPermissionSchema = Joi.object().keys({
+  uuid: Joi.string().required(),
+  type: Joi.number().integer().min(1).max(3),
+  disabled: Joi.number().integer().min(0).max(1),
+  logout: Joi.number().integer().min(0).max(1)
+})
+
+/**
  * 登录校验
  */
 const accountLoginSchema = Joi.object().keys({
@@ -59,8 +69,8 @@ const appCreateSchema = Joi.object().keys({
   icon: Joi.string().required(),
   relatedDomain: Joi.string().required(),
   accountsLimit: Joi.number().required(),
-  tempAccount: Joi.string(),
-  hidden: Joi.boolean().required()
+  tempAccount: Joi.string().allow(''),
+  hidden: Joi.number().integer().min(0).max(1).required()
 })
 
 /**
@@ -68,13 +78,13 @@ const appCreateSchema = Joi.object().keys({
  */
 const appUpdateSchema = Joi.object().keys({
   uuid: Joi.string().required(),
-  name: Joi.string(),
-  summary: Joi.string(),
+  name: Joi.string().min(1).max(8),
+  summary: Joi.string().min(0).max(30),
   link: Joi.string().uri(),
   icon: Joi.string(),
   relatedDomain: Joi.string(),
   accountsLimit: Joi.number(),
-  tempAccount: Joi.string(),
+  tempAccount: Joi.string().allow(),
   hidden: Joi.number().integer().min(0).max(1)
 })
 
@@ -82,6 +92,7 @@ module.exports = {
   accountListSchema,
   accountRegisterSchema,
   accountUpdateSchema,
+  accountPermissionSchema,
   accountLoginSchema,
   accountUpdateAppsSchema,
   appCreateSchema,

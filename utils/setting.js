@@ -31,6 +31,10 @@ const TypePermission = [
     type: [2]
   },
   {
+    path: '/register/account/updatePermission',
+    type: [2]
+  },
+  {
     path: '/register/account/updateApps',
     type: [1, 2]
   },
