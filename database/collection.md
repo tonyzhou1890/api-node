@@ -134,3 +134,41 @@ CREATE TABLE IF NOT EXISTS `er_book` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='享阅阅读信息表';
 ```
+
+## 享阅 banner 表 er_banner
+```
+CREATE TABLE IF NOT EXISTS `er_banner` (
+  `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '自增id字段',
+  `uuid` varchar(40) NOT NULL COMMENT '程序生成的uuid',
+  `title` varchar(40) NOT NULL COMMENT 'banner 标题',
+  `image` varchar(128) NOT NULL COMMENT 'banner 图片路径',
+  `href` varchar(128) DEFAULT '' COMMENT 'banner 点击跳转链接',
+  `memo` varchar(128) DEFAULT '' COMMENT 'banner 说明/备注',
+  `active` tinyint(1) DEFAULT '1' COMMENT 'banner 是否活动状态/是否显示',
+  `order` tinyint(1) DEFAULT '0' COMMENT 'banner 显示的顺序',
+  `create_time` datetime NOT NULL COMMENT 'banner 创建时间',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='享阅 banner 表';
+```
+
+## 享阅标签表 er_tag
+```
+CREATE TABLE IF NOT EXISTS `er_tag` (
+  `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '自增id字段',
+  `uuid` varchar(40) NOT NULL COMMENT '程序生成的uuid',
+  `tag` varchar(8) NOT NULL COMMENT '标签名称',
+  `create_time` datetime NOT NULL COMMENT 'banner 创建时间',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='享阅标签表';
+```
+
+## 享阅作者表 er_author
+```
+CREATE TABLE IF NOT EXISTS `er_anthor` (
+  `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '自增id字段',
+  `uuid` varchar(40) NOT NULL COMMENT '程序生成的uuid',
+  `name` varchar(20) NOT NULL COMMENT '作者名字',
+  `create_time` datetime NOT NULL COMMENT 'banner 创建时间',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='享阅作者表';
+```
