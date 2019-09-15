@@ -167,10 +167,32 @@ const formatTime = (data, format, field) => {
   })
 }
 
+/**
+ * 将符号分隔的字符串替换成对应的名称
+ * @param {string} str 字符串
+ * @param {array} arr 替换数组，元素是 value label 组成的对象
+ * @param {string} joinChar 连字符
+ */
+const replaceValueLabelStr = (str, arr, joinChar) => {
+  let s = str || ''
+  let a = arr || []
+  let c = joinChar || ','
+  let strs = str.split(joinChar)
+  strs.map((item, index) => {
+    arr.map(rule => {
+      if (rule.value === item) {
+        strs[index] = rule.label
+      }
+    })
+  })
+  return strs.join(joinChar)
+}
+
 module.exports = {
   errorMsg,
   base64ToFile,
   strToImageFile,
   sizeOfBase64,
-  formatTime
+  formatTime,
+  replaceValueLabelStr
 }

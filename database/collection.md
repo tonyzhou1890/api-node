@@ -166,7 +166,7 @@ CREATE TABLE IF NOT EXISTS `er_tag` (
 
 ## 享阅作者表 er_author
 ```
-CREATE TABLE IF NOT EXISTS `er_anthor` (
+CREATE TABLE IF NOT EXISTS `er_author` (
   `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '自增id字段',
   `uuid` varchar(40) NOT NULL COMMENT '程序生成的uuid',
   `name` varchar(20) NOT NULL COMMENT '作者名字',

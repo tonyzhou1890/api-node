@@ -6,7 +6,7 @@ const Joi = require('joi')
 const accountListSchema = Joi.object().keys({
   page: Joi.number(),
   rows: Joi.number(),
-  name: Joi.string()
+  nickname: Joi.string()
 })
 
 /**

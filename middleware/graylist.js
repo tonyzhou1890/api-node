@@ -4,7 +4,9 @@ const enjoyReadingPrefix = '/enjoyReading'
 // 享阅灰名单路由
 const enjoyReadingGraylist = [
   '/banner/homeList',
-  '/tag/list'
+  '/tag/list',
+  '/latest/list',
+  '/discount/list'
 ]
 
 // 将前缀添上
