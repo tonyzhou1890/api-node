@@ -4,6 +4,7 @@ const { collection } = require('../utils/database')
 const { query } = require('../utils/query')
 const { errorMsg } = require('../utils/utils')
 const { TypePermission } = require('../utils/setting')
+const { enjoyReadingGraylist } = require('./graylist')
 const humps = require('humps')
 
 /**
@@ -15,6 +16,11 @@ const whitelist = [
 ]
 
 /**
+ * token 验证灰名单，如果有token，检测 token，如果 token 有效，一般操作，查询用户信息，如果 token 无效，record 字段为 ‘invalid’，如果没有 token，record 字段为 null
+ */
+const graylist = [...enjoyReadingGraylist]
+
+/**
  * 验证token
  */
 const valiToken = async (req, res, next) => {
@@ -24,10 +30,17 @@ const valiToken = async (req, res, next) => {
     return next()
   }
   let r = {}
-  // 如果没有token，code 31
+  // 如果没有token
   if (!req.headers.token) {
-    r.code = 31
-    r = errorMsg(r)
+    // 如果不在灰名单，code 31
+    if (!graylist.includes(req.__transUrl.pathname)) {
+      r.code = 31
+      r = errorMsg(r)
+    } else {
+      // 在灰名单里面，进入下一步
+      req.__record = null
+      return next()
+    }
   } else {
     // 否则查询是否登录
     const sql = 'SELECT * FROM accounts WHERE token = ?'
@@ -36,8 +49,15 @@ const valiToken = async (req, res, next) => {
       req.__record = humps.camelizeKeys(result[0])
       return next()
     } else {
-      r.code = 31
-      r = errorMsg(r)
+      // 如果在灰名单里面，并且查询没有报错，__record 设为 ‘invalid’
+      if (Array.isArray(result) && graylist.includes(req.__transUrl.pathname)) {
+        req.__record = 'invalid'
+        return next()
+      } else {
+        // 否则 code 31
+        r.code = 31
+        r = errorMsg(r)
+      }
     }
   }
   
@@ -49,8 +69,8 @@ const valiToken = async (req, res, next) => {
  */
 const valiPermission = async (req, res, next) => {
   let response = {}
-  // 如果在白名单内，直接next
-  if (whitelist.includes(req.__transUrl.pathname)) {
+  // 如果在白名单/灰名单内，直接next
+  if (whitelist.includes(req.__transUrl.pathname) || graylist.includes(req.__transUrl.pathname)) {
     return next()
   }
   // 如果账号已经注销，直接返回结束请求

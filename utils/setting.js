@@ -44,8 +44,25 @@ const TypePermission = [
   }
 ]
 
+// 享阅角色
+const EnjoyReadingRole = {
+  common: {
+    value: 1,
+    label: '普通账户'
+  },
+  admin: {
+    value: 2,
+    label: '管理员'
+  },
+  publisher: {
+    value: 3,
+    label: '出版社'
+  }
+}
+
 module.exports = {
   LoginExpireTime,
   RegisterAccountType,
-  TypePermission
+  TypePermission,
+  EnjoyReadingRole
 }

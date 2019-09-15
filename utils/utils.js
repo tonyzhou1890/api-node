@@ -1,4 +1,5 @@
 const fs = require('fs')
+const moment = require('moment')
 
 /**
  * 插入错误信息
@@ -154,9 +155,22 @@ const sizeOfBase64 = (base64, limit) => {
   }
 }
 
+/**
+ * 格式化时间
+ */
+const formatTime = (data, format, field) => {
+  let f = format || 'YYYY-MM-DD HH:mm:ss'
+  let p = field || 'createTime'
+  // 创建时间格式改一下
+  data.map(item => {
+    item[p] = item[p] ? moment(item[p]).format('YYYY-MM-DD HH:mm:ss') : ''
+  })
+}
+
 module.exports = {
   errorMsg,
   base64ToFile,
   strToImageFile,
-  sizeOfBase64
+  sizeOfBase64,
+  formatTime
 }

@@ -36,7 +36,7 @@ CREATE TABLE IF NOT EXISTS `apps` (
   `link` varchar(256) NOT NULL COMMENT '应用链接',
   `icon` varchar(256) NOT NULL COMMENT '应用图标链接',
   `related_domain` varchar(256) NOT NULL COMMENT '关联域名，逗号分隔',
-  `register_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '应用注册时间',
+  `register_time` datetime NOT NULL COMMENT '应用注册时间',
   `accounts` int(11) DEFAULT NULL COMMENT '账号数量',
   `accounts_limit` int(11) NOT NULL COMMENT '账号数量上限',
   `temp_account` varchar(32) DEFAULT NULL COMMENT '体验账号uuid',
@@ -127,12 +127,14 @@ CREATE TABLE IF NOT EXISTS `er_book` (
   `summary` varchar(1024) DEFAULT '' COMMENT '书籍/系列概要',
   `free` tinyint(1) DEFAULT '1' COMMENT '是否免费',
   `score` int(11) NOT NULL DEFAULT 0 COMMENT '积分',
+  `discount` tinyint(1) DEFAULT '0' COMMENT '是否打折',
+  `discount_score` int(11) NOT NULL DEFAULT 0 COMMENT '折扣后积分',
   `status` tinyint(1) DEFAULT '0' COMMENT '是否禁用',
   `tag` varchar(256) NOT NULL COMMENT '半角逗号分隔的标签 uuid',
-  `order` tinyint(1) DEFAULT '0' COMMENT '系列内书籍排序',
+  `sequence` tinyint(1) DEFAULT '0' COMMENT '系列内书籍排序',
   `create_time` datetime NOT NULL COMMENT '开始阅读时间',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='享阅阅读信息表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='享阅书籍表';
 ```
 
 ## 享阅 banner 表 er_banner
@@ -145,7 +147,7 @@ CREATE TABLE IF NOT EXISTS `er_banner` (
   `href` varchar(128) DEFAULT '' COMMENT 'banner 点击跳转链接',
   `memo` varchar(128) DEFAULT '' COMMENT 'banner 说明/备注',
   `active` tinyint(1) DEFAULT '1' COMMENT 'banner 是否活动状态/是否显示',
-  `order` tinyint(1) DEFAULT '0' COMMENT 'banner 显示的顺序',
+  `sequence` tinyint(1) DEFAULT '0' COMMENT 'banner 显示的顺序',
   `create_time` datetime NOT NULL COMMENT 'banner 创建时间',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='享阅 banner 表';
@@ -157,7 +159,7 @@ CREATE TABLE IF NOT EXISTS `er_tag` (
   `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '自增id字段',
   `uuid` varchar(40) NOT NULL COMMENT '程序生成的uuid',
   `tag` varchar(8) NOT NULL COMMENT '标签名称',
-  `create_time` datetime NOT NULL COMMENT 'banner 创建时间',
+  `create_time` datetime NOT NULL COMMENT 'tag 创建时间',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='享阅标签表';
 ```
@@ -168,7 +170,7 @@ CREATE TABLE IF NOT EXISTS `er_anthor` (
   `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '自增id字段',
   `uuid` varchar(40) NOT NULL COMMENT '程序生成的uuid',
   `name` varchar(20) NOT NULL COMMENT '作者名字',
-  `create_time` datetime NOT NULL COMMENT 'banner 创建时间',
+  `create_time` datetime NOT NULL COMMENT 'author 创建时间',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='享阅作者表';
 ```

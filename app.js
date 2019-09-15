@@ -9,6 +9,7 @@ const { valiToken, valiPermission } = require('./middleware/middleware')
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
 const registerRouter = require('./routes/register')
+const enjoyReadingRouter = require('./routes/enjoyReading')
 
 var app = express();
 
@@ -43,6 +44,7 @@ app.use(valiPermission)
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
 app.use('/register', registerRouter)
+app.use('/enjoyReading', enjoyReadingRouter)
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {

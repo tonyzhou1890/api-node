@@ -48,15 +48,30 @@ let unique = async function(db, table, field, param) {
 
 /**
  * 生成更新语句
+ * @param {string} table 表名
+ * @param {object} obj 需要更新的对象
+ * @param {array} fields 需要更新的字段，驼峰式，可选
  */
-let generateUpdateClause = function(table, obj) {
+let generateUpdateClause = function(table, obj, fields) {
   let sql = `UPDATE ${table} SET `
   let clause = ''
-  Object.keys(obj).map(item => {
-    if (typeof obj[item] === 'string') {
-      clause += `${humps.decamelize(item)}='${obj[item]}', `
+  // 如果 fields 是数组，则生成更新对象
+  let temp = null
+  if (Array.isArray(fields)) {
+    temp = {}
+    fields.map(key => {
+      if (obj[key] !== undefined) {
+        temp[key] = obj[key]
+      }
+    })
+  } else {
+    temp = obj
+  }
+  Object.keys(temp).map(item => {
+    if (typeof temp[item] === 'string') {
+      clause += `${humps.decamelize(item)}='${temp[item]}', `
     } else {
-      clause += `${humps.decamelize(item)}=${obj[item]}, `
+      clause += `${humps.decamelize(item)}=${temp[item]}, `
     }
   })
   clause = clause.slice(0, -2)
