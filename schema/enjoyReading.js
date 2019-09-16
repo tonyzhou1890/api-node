@@ -20,7 +20,16 @@ const specialListDiscountSchema = Joi.object().keys({
   sort: Joi.number()
 })
 
+/**
+ * 免费书籍列表
+ */
+const specialListFreeSchema = Joi.object().keys({
+  page: Joi.number(),
+  rows: Joi.number()
+})
+
 module.exports = {
   specialListLatestSchema,
-  specialListDiscountSchema
+  specialListDiscountSchema,
+  specialListFreeSchema
 }

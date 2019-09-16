@@ -6,7 +6,8 @@ const enjoyReadingGraylist = [
   '/banner/homeList',
   '/tag/list',
   '/latest/list',
-  '/discount/list'
+  '/discount/list',
+  '/free/list'
 ]
 
 // 将前缀添上

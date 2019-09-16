@@ -177,7 +177,7 @@ const replaceValueLabelStr = (str, arr, joinChar) => {
   let s = str || ''
   let a = arr || []
   let c = joinChar || ','
-  let strs = str.split(joinChar)
+  let strs = str.split(c)
   strs.map((item, index) => {
     arr.map(rule => {
       if (rule.value === item) {
