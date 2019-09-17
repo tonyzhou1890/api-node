@@ -28,8 +28,29 @@ const specialListFreeSchema = Joi.object().keys({
   rows: Joi.number()
 })
 
+/**
+ * 标签书籍列表
+ */
+const tagBookListSchema = Joi.object().keys({
+  page: Joi.number(),
+  rows: Joi.number(),
+  tag: Joi.string().required(),
+  filter: Joi.number()
+})
+
+/**
+ * 搜索书籍列表
+ */
+const searchBookListSchema = Joi.object().keys({
+  page: Joi.number(),
+  rows: Joi.number(),
+  keyword: Joi.string().required().allow(''),
+})
+
 module.exports = {
   specialListLatestSchema,
   specialListDiscountSchema,
-  specialListFreeSchema
+  specialListFreeSchema,
+  tagBookListSchema,
+  searchBookListSchema
 }

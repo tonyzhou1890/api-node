@@ -3,7 +3,7 @@ const router = express.Router()
 
 const { homeBannerList } = require('../model/enjoyReadingBanner')
 const { tagList } = require('../model/enjoyReadingCommon')
-const { latestList, discountList, freeList } = require('../model/enjoyReadingBookList')
+const { latestList, discountList, freeList, tagBookList, searchBookList } = require('../model/enjoyReadingBookList')
 
 /**
  * 首页 banner 列表
@@ -29,5 +29,15 @@ router.post('/discount/list', discountList)
  * 免费书籍列表
  */
 router.post('/free/list', freeList)
+
+/**
+ * 标签书籍列表
+ */
+router.post('/tagBook/list', tagBookList)
+
+/**
+ * 搜索书籍列表
+ */
+router.post('/searchBook/list', searchBookList)
 
 module.exports = router

@@ -46,7 +46,7 @@ router.post('/account/list', async (req, res, next) => {
 
     const countSql = `SELECT COUNT(uuid) FROM accounts${condition}`
     const countResult = await query(collection, countSql)
-    console.log(countResult)
+    // console.log(countResult)
     if (Array.isArray(result) && Array.isArray(countResult) && countResult.length) {
       response = errorMsg({ code: 0 })
       response.data = humps.camelizeKeys(result)

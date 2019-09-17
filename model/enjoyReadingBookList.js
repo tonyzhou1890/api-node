@@ -8,7 +8,7 @@ const { dbOptions, collection } = require('../utils/database')
 const { query, limit, unique, generateUpdateClause, isUpdateSuccess } = require('../utils/query')
 const { errorMsg, strToImageFile, sizeOfBase64, formatTime, replaceValueLabelStr } = require('../utils/utils')
 const { authorToBook, queryBookList } = require('../utils/advancedUtils')
-const { specialListLatestSchema, specialListDiscountSchema, specialListFreeSchema } = require('../schema/enjoyReading')
+const { specialListLatestSchema, specialListDiscountSchema, specialListFreeSchema, tagBookListSchema, searchBookListSchema } = require('../schema/enjoyReading')
 const { LoginExpireTime, RegisterAccountType, EnjoyReadingRole } = require('../utils/setting')
 
 /**
@@ -99,8 +99,90 @@ async function freeList(req, res, next) {
   return res.send(response);
 }
 
+/**
+ * 标签书籍 列表
+ */
+async function tagBookList(req, res, next) {
+  let response = {}
+  const vali = Joi.validate(req.body, tagBookListSchema, {allowUnknown: true})
+  if (vali.error) {
+    response = errorMsg({ code: 24 }, vali.error.details[0].message)
+  } else {
+    // 查询标签
+    const tagSql = `SELECT uuid FROM er_tag WHERE tag = '${req.body.tag}'`
+    const tagResult = await query(collection, tagSql)
+    if (Array.isArray(tagResult)) {
+      // 如果标签不存在
+      if (tagResult.length === 0) {
+        response = errorMsg({ code: 24 }, `标签${req.body.tag}不存在`)
+      } else {
+        // 如果标签存在，继续查询
+        // 查询条件
+        const params = {
+          page: req.body.rows && req.body.page || 1,
+          rows: req.body.page && req.body.rows || limit,
+          filter: req.body.filter || 1,
+          tag: tagResult[0].uuid
+        }
+
+        // 从属系列为空，则代表是单本/系列名
+        // 位置为2，则代表是书城书籍
+        // 状态为0，则没有禁用
+        let condition = ` WHERE subordinate_series = '' AND position = 2 AND status = 0 AND tag LIKE '%${params.tag}%'`
+        // 如果需要过滤，拼接条件语句
+        if (params.filter !== 1) {
+          let temp = params.filter === 2 ? 1 : 0
+          condition += ` AND free = '${temp}'`
+        }
+
+        condition += ` ORDER BY create_time DESC`
+
+        response = await queryBookList(params, condition)
+      }
+    }
+  }
+  return res.send(response);
+}
+
+/**
+ * 搜索书籍 列表
+ */
+async function searchBookList(req, res, next) {
+  let response = {}
+  const vali = Joi.validate(req.body, searchBookListSchema, {allowUnknown: true})
+  if (vali.error) {
+    response = errorMsg({ code: 24 }, vali.error.details[0].message)
+  } else {
+    // 查询条件
+    const params = {
+      page: req.body.rows && req.body.page || 1,
+      rows: req.body.page && req.body.rows || limit,
+      keyword: req.body.keyword
+    }
+
+    // 从属系列为空，则代表是单本/系列名
+    // 位置为2，则代表是书城书籍
+    // 状态为0，则没有禁用
+    let condition = ` WHERE subordinate_series = '' AND position = 2 AND status = 0 AND name LIKE '%${params.keyword}%'`
+
+    // 如果有关键字不为空，按照匹配度排序
+    // ORDER BY LENGTH 按照 name 长度排序---按照匹配度排序
+    if (params.keyword) {
+      condition += ` ORDER BY LENGTH(name)`
+    } else {
+      // 否则按照时间排序
+      condition += ` ORDER BY create_time DESC`
+    }
+
+    response = await queryBookList(params, condition)
+  }
+  return res.send(response);
+}
+
 module.exports = {
   latestList,
   discountList,
-  freeList
+  freeList,
+  tagBookList,
+  searchBookList
 }

@@ -5,6 +5,7 @@ const { query } = require('../utils/query')
 const { errorMsg } = require('../utils/utils')
 const { TypePermission } = require('../utils/setting')
 const { enjoyReadingGraylist } = require('./graylist')
+const { enjoyReadingWhitelist } = require('./whitelist')
 const humps = require('humps')
 
 /**
@@ -12,7 +13,8 @@ const humps = require('humps')
  */
 const whitelist = [
   '/register/account/register',
-  '/register/account/login'
+  '/register/account/login',
+  ...enjoyReadingWhitelist
 ]
 
 /**

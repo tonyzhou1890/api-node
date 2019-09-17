@@ -17,7 +17,7 @@ async function homeBannerList(req, res, next) {
   let response = {}
   
   const sql = `SELECT uuid, title, image, href FROM er_banner WHERE active = 1 ORDER BY sequence`
-  console.log(sql)
+  // console.log(sql)
   const result = await query(collection, sql)
 
   if (Array.isArray(result)) {
