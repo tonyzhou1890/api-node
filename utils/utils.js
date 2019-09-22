@@ -157,6 +157,7 @@ const sizeOfBase64 = (base64, limit) => {
 
 /**
  * 格式化时间
+ * 没有返回值
  */
 const formatTime = (data, format, field) => {
   let f = format || 'YYYY-MM-DD HH:mm:ss'

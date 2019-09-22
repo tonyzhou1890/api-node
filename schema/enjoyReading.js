@@ -47,10 +47,26 @@ const searchBookListSchema = Joi.object().keys({
   keyword: Joi.string().required().allow(''),
 })
 
+/**
+ * 书籍详情
+ */
+const bookDetailSchema = Joi.object().keys({
+  uuid: Joi.string().required()
+})
+
+/**
+ * 书籍推荐
+ */
+const bookRecommendSchema = Joi.object().keys({
+  uuid: Joi.string().required()
+})
+
 module.exports = {
   specialListLatestSchema,
   specialListDiscountSchema,
   specialListFreeSchema,
   tagBookListSchema,
-  searchBookListSchema
+  searchBookListSchema,
+  bookDetailSchema,
+  bookRecommendSchema
 }

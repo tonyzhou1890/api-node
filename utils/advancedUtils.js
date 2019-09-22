@@ -57,6 +57,46 @@ async function authorToBook(books) {
 }
 
 /**
+ * 查询书本的标签并替换 tags 的值
+ * @param {array} books 书籍列表
+ */
+async function tagToBook(books) {
+  let data = JSON.parse(JSON.stringify(books))
+  let tags = []
+  // 将所有的标签放到一个数组里
+  data.map(item => {
+    if (item.tag) {
+      tags.push(...item.tag.split(','))
+    }
+  })
+  // 数组去重
+  tags = [...new Set(tags)]
+  // 如果有需要查询的标签，则查询
+  if (tags.length) {
+    let tagStr = tags.map(item => `'${item}'`).join(',')
+    let tagSql = `SELECT tag, uuid from er_tag WHERE uuid IN (${tagStr})`
+    let tagResult = await query(collection, tagSql)
+    if (Array.isArray(tagResult) && tagResult.length) {
+      tagResult.map(item => {
+        let index = tags.indexOf(item.uuid)
+        tags[index] = {
+          value: item.uuid,
+          label: item.tag
+        }
+      })
+    }
+  }
+  // 标签查询完成后，将所有书籍的标签 uuid 替换为标签文字
+  data.map(item => {
+    if (item.tag) {
+      // 替换字符串
+      item.tag = replaceValueLabelStr(item.tag, tags)
+    }
+  })
+  return data
+}
+
+/**
  * 查询书籍列表
  * @param {object} params 页码条件，page 和 rows
  * @param {string} condition 查询条件
@@ -92,5 +132,6 @@ async function queryBookList(params, condition) {
 
 module.exports = {
   authorToBook,
+  tagToBook,
   queryBookList
 }

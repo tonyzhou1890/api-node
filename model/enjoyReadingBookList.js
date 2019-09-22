@@ -29,7 +29,7 @@ async function latestList(req, res, next) {
 
     // 从属系列为空，则代表是单本/系列名
     // 位置为2，则代表是书城书籍
-    let condition = ` WHERE subordinate_series = '' AND position = 2 AND status = 0`
+    let condition = ` WHERE parent_series = '' AND position = 2 AND status = 0`
     // 如果需要过滤，拼接条件语句
     if (params.filter !== 1) {
       let temp = params.filter === 2 ? 1 : 0
@@ -62,7 +62,7 @@ async function discountList(req, res, next) {
 
     // 从属系列为空，则代表是单本/系列名
     // 位置为2，则代表是书城书籍
-    let condition = ` WHERE subordinate_series = '' AND position = 2 AND status = 0 AND discount = 1 AND free = 0`
+    let condition = ` WHERE parent_series = '' AND position = 2 AND status = 0 AND discount = 1 AND free = 0`
     // 如果需要过滤，拼接条件语句
     if (params.sort !== 1) {
       condition += ` ORDER BY discount_score ${params.sort === 2 ? 'ASC' : 'DESC'}`
@@ -91,7 +91,7 @@ async function freeList(req, res, next) {
 
     // 从属系列为空，则代表是单本/系列名
     // 位置为2，则代表是书城书籍
-    let condition = ` WHERE subordinate_series = '' AND position = 2 AND status = 0 AND free = 1`
+    let condition = ` WHERE parent_series = '' AND position = 2 AND status = 0 AND free = 1`
 
     response = await queryBookList(params, condition)
   }
@@ -128,7 +128,7 @@ async function tagBookList(req, res, next) {
         // 从属系列为空，则代表是单本/系列名
         // 位置为2，则代表是书城书籍
         // 状态为0，则没有禁用
-        let condition = ` WHERE subordinate_series = '' AND position = 2 AND status = 0 AND tag LIKE '%${params.tag}%'`
+        let condition = ` WHERE parent_series = '' AND position = 2 AND status = 0 AND tag LIKE '%${params.tag}%'`
         // 如果需要过滤，拼接条件语句
         if (params.filter !== 1) {
           let temp = params.filter === 2 ? 1 : 0
@@ -163,7 +163,7 @@ async function searchBookList(req, res, next) {
     // 从属系列为空，则代表是单本/系列名
     // 位置为2，则代表是书城书籍
     // 状态为0，则没有禁用
-    let condition = ` WHERE subordinate_series = '' AND position = 2 AND status = 0 AND name LIKE '%${params.keyword}%'`
+    let condition = ` WHERE parent_series = '' AND position = 2 AND status = 0 AND name LIKE '%${params.keyword}%'`
 
     // 如果有关键字不为空，按照匹配度排序
     // ORDER BY LENGTH 按照 name 长度排序---按照匹配度排序

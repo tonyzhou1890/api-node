@@ -9,7 +9,8 @@ const enjoyReadingWhitelist = [
   '/discount/list',
   '/free/list',
   '/tagBook/list',
-  '/searchBook/list'
+  '/searchBook/list',
+  '/book/recommend'
 ]
 
 // 将前缀添上

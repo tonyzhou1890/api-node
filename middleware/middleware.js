@@ -1,9 +1,9 @@
 const express = require('express')
 const url = require('url')
 const { collection } = require('../utils/database')
-const { query } = require('../utils/query')
-const { errorMsg } = require('../utils/utils')
-const { TypePermission } = require('../utils/setting')
+const { query, unique } = require('../utils/query')
+const { errorMsg, formatTime } = require('../utils/utils')
+const { TypePermission, EnjoyReadingPermission } = require('../utils/setting')
 const { enjoyReadingGraylist } = require('./graylist')
 const { enjoyReadingWhitelist } = require('./whitelist')
 const humps = require('humps')
@@ -46,9 +46,14 @@ const valiToken = async (req, res, next) => {
   } else {
     // 否则查询是否登录
     const sql = 'SELECT * FROM accounts WHERE token = ?'
-    const result = await query(collection, sql, req.headers.token)
+    let result = await query(collection, sql, req.headers.token)
     if (Array.isArray(result) && result.length) {
-      req.__record = humps.camelizeKeys(result[0])
+      result = humps.camelizeKeys(result)
+      formatTime(result, null, 'registerTime')
+      formatTime(result, null, 'loginTime')
+      formatTime(result, null, 'lastLoginTime')
+      formatTime(result, null, 'expire')
+      req.__record = result[0]
       return next()
     } else {
       // 如果在灰名单里面，并且查询没有报错，__record 设为 ‘invalid’
@@ -116,7 +121,83 @@ const valiPermission = async (req, res, next) => {
   }
 }
 
+/**
+ * 享阅验证中间件
+ */
+const valiEnjoyReading = async (req, res, next) => {
+  // 如果不是享阅路径的请求，或者在白名单，直接next
+  if (req.__transUrl.pathname.indexOf('/enjoyReading') !== 0 || whitelist.includes(req.__transUrl.pathname)) {
+    return next()
+  }
+  let response = {}
+
+  // 如果有注册中心的账户信息，则尝试获取享阅账号信息
+  if (req.__record !== null && req.__record !== 'invalid') {
+    let u = await unique(collection, 'er_accounts', 'account_uuid', req.__record.uuid)
+    // 如果查到了，则说明账户有该应用的信息
+    if (u && u[0]) {
+      u = humps.camelizeKeys(u)
+      formatTime(u)
+      req.__enjoyReadingRecord = u[0]
+    }
+  }
+
+  // 检查账户有没有订阅享阅应用，如果没有订阅，__record 改为 null，__enjoyReadingRecord 也要改成 null
+  // 改成 null 后，需要权限的接口会拦截请求，灰名单接口会将请求当成一般请求处理
+  if (req.__record !== null && req.__record !== 'invalid') {
+    let appSql = `SELECT * FROM apps WHERE related_domain LIKE '%${req.hostname}%'`
+    let appResult = await query(collection, appSql)
+    if (!(Array.isArray(appResult) && appResult[0] && req.__record.apps.includes(appResult[0].uuid))) {
+      req.__record = null
+      req.__enjoyReadingRecord = null
+    }
+  }
+
+  // 如果在灰名单中，直接next，不需要权限检查
+  if (graylist.includes(req.__transUrl.pathname)) {
+    return next()
+  }
+
+  // 检查角色权限名单
+  const length = EnjoyReadingPermission.length
+  let permission = null
+  for (let i = 0; i < length; i++) {
+    if (req.__transUrl.pathname === EnjoyReadingPermission[i].path) {
+      permission = EnjoyReadingPermission[i]
+      break
+    }
+  }
+
+  // 如果在权限名单，检查注册中心账户记录和应用账户记录，并且需要检查角色
+  if (permission) {
+    // 检查注册中心账户记录和应用账户记录
+    if (req.__record && req.__enjoyReadingRecord !== null) {
+      // 是否需要角色检查
+      if (Array.isArray(permission.roles)) {
+        // 是否符合角色要求
+        if (permission.roles.includes(req.__enjoyReadingRecord.role)) {
+          return next()
+        } else {
+          response = errorMsg({ code: 35 })
+          return res.send(response)
+        }
+      } else {
+        return next()
+      }
+    } else {
+      response = errorMsg({ code: 35 })
+      return res.send(response)
+    }
+    
+  } else {
+    // 否则直接下一步
+    return next()
+  }
+  
+}
+
 module.exports = {
   valiToken,
-  valiPermission
+  valiPermission,
+  valiEnjoyReading
 }

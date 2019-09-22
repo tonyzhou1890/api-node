@@ -79,12 +79,10 @@ CREATE TABLE IF NOT EXISTS `er_accounts` (
   `uuid` varchar(40) NOT NULL COMMENT '程序生成的uuid',
   `account_uuid` varchar(40) NOT NULL COMMENT 'accounts 表关联账户 uuid',
   `role` int(1) DEFAULT NULL COMMENT '享阅账户角色：1-普通，2-管理员，3-出版社',
-  `store_book` text(10000) DEFAULT '' COMMENT '账户书库书籍 uuid，包括书城和个人空间，包含子册',
   `store_book_num` int(11) DEFAULT 0 COMMENT '账户书库书目，包括书城和个人空间，不计算子册',
-  `shelf_book` text(10000) DEFAULT '' COMMENT '账户书架书籍 uuid，包含子册',
   `shelf_book_num` int(11) DEFAULT 0 COMMENT '账户书架书目',
   `shopping_cart` varchar(2000) DEFAULT '' COMMENT '购物车书籍 uuid，包含子册',
-  `total_score` int(11) DEFAULT 0 COMMENT '账户拥有的空间，单位M',
+  `total_space` int(11) DEFAULT 0 COMMENT '账户拥有的空间，单位M',
   `private_space` float(11) DEFAULT 0 COMMENT '私有空间已用容量，单位M，最多三位小数',
   `store_space` float(11) DEFAULT 0 COMMENT '书城空间已用容量，单位M，最多三位小数',
   `create_time` datetime NOT NULL COMMENT '入住时间',
@@ -92,9 +90,9 @@ CREATE TABLE IF NOT EXISTS `er_accounts` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='享悦用户表';
 ```
 
-## 享阅阅读信息表 er_reading_info
+## 享阅用户书籍信息表 er_account_book_info
 ```
-CREATE TABLE IF NOT EXISTS `er_reading_info` (
+CREATE TABLE IF NOT EXISTS `er_account_book_info` (
   `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '自增id字段',
   `uuid` varchar(40) NOT NULL COMMENT '程序生成的uuid',
   `book_uuid` varchar(40) NOT NULL COMMENT 'er_book 表关联书籍 uuid',
@@ -102,10 +100,12 @@ CREATE TABLE IF NOT EXISTS `er_reading_info` (
   `percent` float(11) DEFAULT 0 COMMENT '阅读进度百分比，两位小数',
   `point` int(11) DEFAULT 0 COMMENT '阅读进度字符位置',
   `length` int(11) DEFAULT 0 COMMENT '书籍字符串长度',
+  `reading_status` tinyint(1) DEFAULT 0 COMMENT '书籍阅读状态，0：未阅读，1：阅读中',
+  `on_shelf` tinyint(1) DEFAULT 0 COMMENT '书籍是否在书架，0：不在，1：在',
   `update_time` datetime NOT NULL COMMENT '上一次阅读时间',
   `create_time` datetime NOT NULL COMMENT '开始阅读时间',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='享阅阅读信息表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='享阅用户书籍信息表';
 ```
 
 ## 享阅书籍表 er_book
@@ -116,7 +116,7 @@ CREATE TABLE IF NOT EXISTS `er_book` (
   `upload_account_uuid` varchar(40) NOT NULL COMMENT '上传书籍的账户的 account_uuid',
   `name` varchar(40) NOT NULL COMMENT '书名/系列名',
   `type` tinyint(1) DEFAULT 1 COMMENT '书籍类型，1-单本，2-系列/分册定价，3-系列/整体定价',
-  `subordinate_series` varchar(40) DEFAULT '' COMMENT '所属系列的 uuid',
+  `parent_series` varchar(40) DEFAULT '' COMMENT '所属系列的 uuid',
   `position` tinyint(1) DEFAULT '1' COMMENT '书籍空间位置，1-个人空间，2-书城',
   `ISBN` varchar(40) DEFAULT '' COMMENT '书籍 ISBN 号',
   `author` varchar(40) NOT NULL COMMENT '半角逗号分隔的作者 uuid',

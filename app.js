@@ -4,7 +4,7 @@ var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 
-const { valiToken, valiPermission } = require('./middleware/middleware')
+const { valiToken, valiPermission, valiEnjoyReading } = require('./middleware/middleware')
 
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
@@ -40,6 +40,8 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use(valiToken)
 // 验证基本权限
 app.use(valiPermission)
+// 验证享阅权限
+app.use(valiEnjoyReading)
 
 app.use('/', indexRouter);
 app.use('/users', usersRouter);

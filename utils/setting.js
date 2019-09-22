@@ -60,9 +60,20 @@ const EnjoyReadingRole = {
   }
 }
 
+// 享阅权限
+// path: 需要校验的请求
+// type: [] 只有在数组中的类型才可以操作，如果不写，则都可以操作
+// roles: [] 只有在数组中的角色才可以操作，如果不写，则都可以操作
+const EnjoyReadingPermission = [
+  {
+    path: '/enjoyReading/account/detail'
+  }
+]
+
 module.exports = {
   LoginExpireTime,
   RegisterAccountType,
-  TypePermission,
-  EnjoyReadingRole
+  TypePermission: TypePermission.concat(EnjoyReadingPermission),
+  EnjoyReadingRole,
+  EnjoyReadingPermission
 }

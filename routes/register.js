@@ -7,7 +7,7 @@ const moment = require('moment')
 const humps = require('humps')
 
 const { dbOptions, collection } = require('../utils/database')
-const { query, limit, unique, generateUpdateClause, isUpdateSuccess } = require('../utils/query')
+const { query, limit, unique, generateUpdateClause, isUpdateSuccess, isInsertSuccess } = require('../utils/query')
 const { errorMsg, strToImageFile, sizeOfBase64 } = require('../utils/utils')
 const { accountListSchema, accountRegisterSchema, accountUpdateSchema, accountPermissionSchema, accountLoginSchema, accountUpdateAppsSchema, appCreateSchema, appUpdateSchema } = require('../schema/register')
 const { LoginExpireTime, RegisterAccountType } = require('../utils/setting')
@@ -78,7 +78,7 @@ router.post('/account/register', async (req, res, next) => {
       ('${uuid}', '${req.body.nickname}', '${req.body.pwd}', '${birth}', '${req.body.question}', '${req.body.answer}', '${type}', '${registerTime}')
       `
       const result = await query(collection, sql)
-      if (typeof result === 'object' && result.insertId) {
+      if (isInsertSuccess(result)) {
         response = errorMsg({ code: 0 })
       } else {
         response = errorMsg({ code: 3 })
@@ -223,7 +223,7 @@ router.post('/account/login', async (req, res, next) => {
           token = '${token}' 
           WHERE uuid = '${record.uuid}';`
         const updateResult = await query(collection, updateSql)
-        if (typeof updateResult === 'object' && updateResult.affectedRows) {
+        if (isUpdateSuccess(updateResult)) {
           response = errorMsg({
             code: 0,
             data: {
@@ -402,7 +402,7 @@ router.post('/apps/create', async (req, res, next) => {
       ('${uuid}', '${req.body.name}', '${req.body.summary}', '${req.body.link}', '${req.body.icon}', '${req.body.relatedDomain}', '${registerTime}', '${accounts}', '${req.body.accountsLimit}', '${req.body.tempAccount}', ${req.body.hidden})
       `
       const result = await query(collection, sql)
-      if (typeof result === 'object' && result.insertId) {
+      if (isInsertSuccess(result)) {
         response = errorMsg({ code: 0 })
       } else {
         response = errorMsg({ code: 3 })

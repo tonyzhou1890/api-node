@@ -85,10 +85,18 @@ let isUpdateSuccess = function(result) {
   return typeof result === 'object' && result.affectedRows
 }
 
+/**
+ * 更新插入成功
+ */
+let isInsertSuccess = function(result) {
+  return typeof result === 'object' && result.insertId
+}
+
 module.exports =  {
   query,
   limit: 10,
   unique,
   generateUpdateClause,
-  isUpdateSuccess
+  isUpdateSuccess,
+  isInsertSuccess
 }

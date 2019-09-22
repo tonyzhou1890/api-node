@@ -2,7 +2,9 @@
 const enjoyReadingPrefix = '/enjoyReading'
 
 // 享阅灰名单路由
-const enjoyReadingGraylist = []
+const enjoyReadingGraylist = [
+  '/book/detail'
+]
 
 // 将前缀添上
 enjoyReadingGraylist.map((item, index) => {
