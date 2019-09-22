@@ -150,6 +150,8 @@ const valiEnjoyReading = async (req, res, next) => {
     if (!(Array.isArray(appResult) && appResult[0] && req.__record.apps.includes(appResult[0].uuid))) {
       req.__record = null
       req.__enjoyReadingRecord = null
+    } else {
+      req.__appInfo = humps.camelizeKeys(appResult)[0]
     }
   }
 

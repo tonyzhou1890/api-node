@@ -8,8 +8,8 @@ const humps = require('humps')
 
 const { dbOptions, collection } = require('../utils/database')
 const { query, limit, unique, generateUpdateClause, isUpdateSuccess, isInsertSuccess } = require('../utils/query')
-const { errorMsg, strToImageFile, sizeOfBase64 } = require('../utils/utils')
-const { accountListSchema, accountRegisterSchema, accountUpdateSchema, accountPermissionSchema, accountLoginSchema, accountUpdateAppsSchema, appCreateSchema, appUpdateSchema } = require('../schema/register')
+const { errorMsg, strToImageFile, sizeOfBase64, formatTime } = require('../utils/utils')
+const { accountListSchema, accountRegisterSchema, accountUpdateSchema, accountPermissionSchema, accountLoginSchema, accountUpdateAppsSchema, appCreateSchema, appUpdateSchema, scoreListSchema } = require('../schema/register')
 const { LoginExpireTime, RegisterAccountType } = require('../utils/setting')
 
 /* GET register listing. */
@@ -467,6 +467,45 @@ router.post('/apps/update', async (req, res, next) => {
       } else {
         response = errorMsg({ code: 4 })
       }
+    }
+  }
+  return res.send(response);
+});
+
+/**
+ * 获取积分记录列表
+ */
+router.post('/score/list', async (req, res, next) => {
+  let response = {}
+  const vali = Joi.validate(req.body, scoreListSchema, {allowUnknown: true})
+  if (vali.error) {
+    response = errorMsg({ code: 24 }, vali.error.details[0].message)
+  } else {
+    const params = {
+      page: req.body.rows && req.body.page || 1,
+      rows: req.body.page && req.body.rows || limit,
+      filter: req.body.filter || 1
+    }
+
+    let condition = ''
+    if (params.filter !== 1) {
+      condition += ` WHERE score ${params.filter === 2 ? '> 0' : '< 0'}`
+    }
+
+    const start = (params.page - 1) * params.rows
+    const sql = `SELECT uuid, score, total_score, way, create_time FROM score_record${condition} LIMIT ${start}, ${params.rows}`
+    const result = await query(collection, sql)
+
+    const countSql = `SELECT COUNT(uuid) FROM score_record${condition}`
+    const countResult = await query(collection, countSql)
+    // console.log(countResult)
+    if (Array.isArray(result) && Array.isArray(countResult) && countResult.length) {
+      response = errorMsg({ code: 0 })
+      response.data = humps.camelizeKeys(result)
+      formatTime(response.data)
+      response.total = countResult[0]['COUNT(uuid)']
+    } else {
+      response = errorMsg({ code: 2 })
     }
   }
   return res.send(response);

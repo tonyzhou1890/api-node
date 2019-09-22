@@ -8,7 +8,7 @@ const { dbOptions, collection } = require('../utils/database')
 const { query, limit, unique, generateUpdateClause, isUpdateSuccess, isInsertSuccess } = require('../utils/query')
 const { errorMsg, strToImageFile, sizeOfBase64, formatTime } = require('../utils/utils')
 const { authorToBook, tagToBook, queryBookList } = require('../utils/advancedUtils')
-const { accountListSchema, accountRegisterSchema, accountUpdateSchema, accountPermissionSchema, accountLoginSchema, accountUpdateAppsSchema, appCreateSchema, appUpdateSchema } = require('../schema/register')
+const {  } = require('../schema/enjoyReading')
 const { LoginExpireTime, RegisterAccountType, EnjoyReadingRole } = require('../utils/setting')
 
 /**
@@ -96,7 +96,55 @@ async function accountDetail(req, res, next) {
   return res.send(response)
 }
 
+/**
+ * 登录积分奖励
+ */
+async function accountLoginScore(req, res, next) {
+  let response = {}
+  // 定义现在时间，开始查询时间，结束时间，获取积分方式，查询是否已经获取的sql
+  let now = moment(),
+    start = now.format('YYYY-MM-DD') + ' 00:00:00',
+    end = moment().add(1, 'days').format('YYYY-MM-DD') + ' 00:00:00',
+    way = '享阅登录积分奖励'
+  const countSql = `SELECT count(uuid) from score_record WHERE create_time BETWEEN '${start}' AND '${end}' AND way = '${way}' AND account_uuid = '${req.__record.uuid}' AND app_uuid = '${req.__appInfo.uuid}'`
+  // 查询是否已经获取
+  let countResult = await query(collection, countSql)
+  // console.log(countSql, countResult)
+  // 如果已经获取，提示
+  if (Array.isArray(countResult) && countResult[0]['count(uuid)']) {
+    response = errorMsg({ code: 24 }, '今天已经获取了登录积分奖励')
+  } else {
+    // 如果操作失败，提示
+    if (!Array.isArray(countResult)) {
+      response = errorMsg({ code: 2 })
+    } else {
+      // 否则继续，插入积分记录
+      let uuid = uuidv1(),
+        score = 5,
+        totalScore = req.__record.score + score
+      const insertScoreSql = `INSERT INTO score_record (uuid, score, total_score, way, app_uuid, account_uuid, create_time)
+      VALUES
+      ('${uuid}', ${score}, ${totalScore}, '${way}', '${req.__appInfo.uuid}', '${req.__record.uuid}', '${now.format('YYYY-MM-DD HH:mm:ss')}')`
+
+      const insertScoreResult = await query(collection, insertScoreSql)
+      // 如果插入成功，更新注册中心账户积分
+      if (isInsertSuccess(insertScoreResult)) {
+        const updateAccountScore = `UPDATE accounts SET 
+        score = ${totalScore} 
+        WHERE uuid = '${req.__record.uuid}'`
+        await query(collection, updateAccountScore)
+        response = errorMsg({ code: 0 })
+        response.data = '积分+5'
+      } else {
+        response = errorMsg({ code: 3 })
+      }
+    }
+  }
+  return res.send(response)
+}
+
 module.exports = {
   tagList,
-  accountDetail
+  accountDetail,
+  accountLoginScore
 }

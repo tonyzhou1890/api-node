@@ -67,6 +67,9 @@ const EnjoyReadingRole = {
 const EnjoyReadingPermission = [
   {
     path: '/enjoyReading/account/detail'
+  },
+  {
+    path: '/enjoyReading/account/loginScore'
   }
 ]
 

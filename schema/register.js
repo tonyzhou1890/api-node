@@ -88,6 +88,15 @@ const appUpdateSchema = Joi.object().keys({
   hidden: Joi.number().integer().min(0).max(1)
 })
 
+/**
+ * 积分列表校验
+ */
+const scoreListSchema = Joi.object().keys({
+  page: Joi.number(),
+  rows: Joi.number(),
+  filter: Joi.number()
+})
+
 module.exports = {
   accountListSchema,
   accountRegisterSchema,
@@ -96,5 +105,6 @@ module.exports = {
   accountLoginSchema,
   accountUpdateAppsSchema,
   appCreateSchema,
-  appUpdateSchema
+  appUpdateSchema,
+  scoreListSchema
 }
