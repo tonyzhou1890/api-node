@@ -8,7 +8,7 @@ const { dbOptions, collection } = require('../utils/database')
 const { query, limit, unique, generateUpdateClause, isUpdateSuccess } = require('../utils/query')
 const { errorMsg, strToImageFile, sizeOfBase64, formatTime, replaceValueLabelStr } = require('../utils/utils')
 const { authorToBook, queryBookList } = require('../utils/advancedUtils')
-const { specialListLatestSchema, specialListDiscountSchema, specialListFreeSchema, tagBookListSchema, searchBookListSchema } = require('../schema/enjoyReading')
+const { specialListLatestSchema, specialListDiscountSchema, specialListFreeSchema, tagBookListSchema, searchBookListSchema, storeBookListSchema } = require('../schema/enjoyReading')
 const { LoginExpireTime, RegisterAccountType, EnjoyReadingRole } = require('../utils/setting')
 
 /**
@@ -179,10 +179,83 @@ async function searchBookList(req, res, next) {
   return res.send(response);
 }
 
+/**
+ * 书库书籍 列表
+ */
+async function storeBookList(req, res, next) {
+  let response = {}
+  const vali = Joi.validate(req.body, storeBookListSchema, {allowUnknown: true})
+  if (vali.error) {
+    response = errorMsg({ code: 24 }, vali.error.details[0].message)
+  } else {
+    // 查询条件
+    const params = {
+      page: req.body.rows && req.body.page || 1,
+      rows: req.body.page && req.body.rows || limit,
+      keyword: req.body.keyword,
+      position: req.body.position || 0
+    }
+
+    // 计算开始位置
+    const start = (params.page - 1) * params.rows
+
+    // 从属系列为空，则代表是单本/系列名
+    let condition = ` WHERE er_book.parent_series = '' AND AND er_book.name LIKE '%${params.keyword}%'`
+
+    // 如果需要根据书籍位置过滤，则添加过滤条件
+    if (params.position) {
+      condition += ` AND er_book.position = ${params.position}`
+    }
+
+    condition += ` AND er_book.uuid = er_account_book_info.book_uuid AND er_account_book_info.account_uuid = '${req.__record.uuid}' ORDER BY er_account_book_info.create_time DESC`
+
+    let listSql = `SELECT ${['uuid', 'name', 'type', 'author', 'front_cover_path', 'free', 'score', 'discount', 'discount_score'].map(item => 'er_book.' + item).join(',')}, er_account_book_info.create_time 
+      FROM 
+      er_book, er_account_book_info${condition} LIMIT ${start}, ${params.rows}`
+
+    let totalSql = `SELECT COUNT(er_book.uuid) FROM er_book, er_account_book_info${condition}`
+
+    response = await queryBookList(params, condition, listSql, totalSql)
+
+    // 格式化时间
+    if (response.code === 0) {
+      formatTime(response.data)
+    }
+  }
+  return res.send(response);
+}
+
+/**
+ * 书架书籍 列表
+ */
+async function shelfBookList(req, res, next) {
+  // 单本或者父系列不为空
+  //  在书架上
+  let condition = ` WHERE (er_book.type = 1 OR er_book.parent_series != '') AND er_book.uuid = er_account_book_info.book_uuid AND er_account_book_info.account_uuid = '${req.__record.uuid}' AND er_account_book_info.on_shelf = 1 ORDER BY er_account_book_info.update_time DESC`
+
+  let listSql = `SELECT ${['uuid', 'name', 'type', 'author', 'front_cover_path', 'free', 'score', 'discount', 'discount_score'].map(item => 'er_book.' + item).join(',')}, ${['create_time', 'update_time', 'percent', 'point', 'length', 'reading_status'].map(item => 'er_account_book_info.' + item).join(',')} 
+    FROM 
+    er_book, er_account_book_info${condition}`
+
+  let totalSql = `SELECT COUNT(er_book.uuid) FROM er_book, er_account_book_info${condition}`
+
+  response = await queryBookList({ page: 1, rows: 10 }, condition, listSql, totalSql)
+
+  // 格式化时间
+  if (response.code === 0) {
+    formatTime(response.data)
+    formatTime(response.data, '', 'updateTime')
+  }
+  
+  return res.send(response);
+}
+
 module.exports = {
   latestList,
   discountList,
   freeList,
   tagBookList,
-  searchBookList
+  searchBookList,
+  storeBookList,
+  shelfBookList
 }

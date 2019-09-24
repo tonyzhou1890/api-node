@@ -3,7 +3,7 @@ const router = express.Router()
 
 const { homeBannerList } = require('../model/enjoyReadingBanner')
 const { tagList, accountDetail, accountLoginScore } = require('../model/enjoyReadingCommon')
-const { latestList, discountList, freeList, tagBookList, searchBookList } = require('../model/enjoyReadingBookList')
+const { latestList, discountList, freeList, tagBookList, searchBookList, storeBookList, shelfBookList } = require('../model/enjoyReadingBookList')
 const { bookDetail, bookRecommend } = require('../model/enjoyReadingBook')
 
 /**
@@ -40,6 +40,16 @@ router.post('/tagBook/list', tagBookList)
  * 搜索书籍列表
  */
 router.post('/searchBook/list', searchBookList)
+
+/**
+ * 书库书籍列表
+ */
+router.post('/account/storeBookList', storeBookList)
+
+/**
+ * 书架书籍列表
+ */
+router.post('/account/shelfBookList', shelfBookList)
 
 /**
  * 获取用户信息

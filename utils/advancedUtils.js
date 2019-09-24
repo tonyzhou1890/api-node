@@ -101,19 +101,18 @@ async function tagToBook(books) {
  * @param {object} params 页码条件，page 和 rows
  * @param {string} condition 查询条件
  */
-async function queryBookList(params, condition) {
+async function queryBookList(params, condition, listSql, totalSql) {
   let response = {}
   // 计算开始位置
   const start = (params.page - 1) * params.rows
   // 查询语句
-  const sql = `SELECT uuid, name, type, author, front_cover_path, free, score, discount, discount_score FROM er_book${condition} LIMIT ${start}, ${params.rows}`
+  const sql = listSql || `SELECT uuid, name, type, author, front_cover_path, free, score, discount, discount_score FROM er_book${condition} LIMIT ${start}, ${params.rows}`
   // 查询结果
   const result = await query(collection, sql)
 
   // 统计结果数量
-  const countSql = `SELECT COUNT(uuid) FROM er_book${condition}`
+  const countSql = totalSql || `SELECT COUNT(uuid) FROM er_book${condition}`
   const countResult = await query(collection, countSql)
-  
   // 如果一切顺利，进入下一步
   if (Array.isArray(result) && Array.isArray(countResult) && countResult.length) {
     let data = humps.camelizeKeys(result)
@@ -123,7 +122,7 @@ async function queryBookList(params, condition) {
     }
     response = errorMsg({ code: 0 })
     response.data = data
-    response.total = countResult[0]['COUNT(uuid)']
+    response.total = Object.values(countResult[0])[0]
   } else {
     response = errorMsg({ code: 2 })
   }

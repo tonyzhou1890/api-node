@@ -103,7 +103,7 @@ CREATE TABLE IF NOT EXISTS `er_account_book_info` (
   `reading_status` tinyint(1) DEFAULT 0 COMMENT '书籍阅读状态，0：未阅读，1：阅读中',
   `on_shelf` tinyint(1) DEFAULT 0 COMMENT '书籍是否在书架，0：不在，1：在',
   `update_time` datetime NOT NULL COMMENT '上一次阅读时间',
-  `create_time` datetime NOT NULL COMMENT '开始阅读时间',
+  `create_time` datetime NOT NULL COMMENT '购买/创建时间',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='享阅用户书籍信息表';
 ```
@@ -135,7 +135,7 @@ CREATE TABLE IF NOT EXISTS `er_book` (
   `status` tinyint(1) DEFAULT '0' COMMENT '是否禁用',
   `tag` varchar(256) NOT NULL COMMENT '半角逗号分隔的标签 uuid',
   `sequence` tinyint(1) DEFAULT '0' COMMENT '系列内书籍排序',
-  `create_time` datetime NOT NULL COMMENT '开始阅读时间',
+  `create_time` datetime NOT NULL COMMENT '创建时间',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='享阅书籍表';
 ```

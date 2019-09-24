@@ -70,6 +70,12 @@ const EnjoyReadingPermission = [
   },
   {
     path: '/enjoyReading/account/loginScore'
+  },
+  {
+    path: '/enjoyReading/account/storeBookList'
+  },
+  {
+    path: '/enjoyReading/account/shelfBookList'
   }
 ]
 

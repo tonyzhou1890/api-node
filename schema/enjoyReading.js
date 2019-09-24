@@ -48,6 +48,16 @@ const searchBookListSchema = Joi.object().keys({
 })
 
 /**
+ * 书库书籍列表
+ */
+const storeBookListSchema = Joi.object().keys({
+  page: Joi.number(),
+  rows: Joi.number(),
+  keyword: Joi.string().required().allow(''),
+  position: Joi.number()
+})
+
+/**
  * 书籍详情
  */
 const bookDetailSchema = Joi.object().keys({
@@ -67,6 +77,7 @@ module.exports = {
   specialListFreeSchema,
   tagBookListSchema,
   searchBookListSchema,
+  storeBookListSchema,
   bookDetailSchema,
   bookRecommendSchema
 }
