@@ -64,4 +64,10 @@ app.use(function(err, req, res, next) {
   res.render('error');
 });
 
+process.on('uncaughtException', function (err) {
+  console.log('Caught exception: ' + err);
+  res.status(err.status || 500);
+  res.render('error');
+});
+
 module.exports = app;

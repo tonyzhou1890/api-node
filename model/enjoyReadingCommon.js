@@ -16,18 +16,37 @@ const { LoginExpireTime, RegisterAccountType, EnjoyReadingRole } = require('../u
  */
 async function tagList(req, res, next) {
   let response = {}
-  
-  const sql = `SELECT uuid, tag, create_time FROM er_tag`
-  const result = await query(collection, sql)
 
-  if (Array.isArray(result)) {
-    let data = humps.camelizeKeys(result)
-    formatTime(data)
-    response = errorMsg({ code: 0 })
-    response.data = data
+  // 拥有有效书籍的标签
+  // 单本或系列名
+  // 位于书城
+  // 未禁用
+  const bookUuidSql = `SELECT tag from er_book WHERE parent_series = '' AND position = 2 AND status = 0`
+  let uuids = await query(collection, bookUuidSql)
+
+  if (Array.isArray(uuids) && uuids.length) {
+    let tags = []
+    uuids.map(item => {
+      tags = tags.concat(item.tag.split(','))
+    })
+    uuids = [...new Set(tags)]
+
+    const sql = `SELECT uuid, tag, create_time FROM er_tag WHERE uuid IN (${uuids.map(item => `'${item}'`).join(',')})`
+    const result = await query(collection, sql)
+
+    if (Array.isArray(result)) {
+      let data = humps.camelizeKeys(result)
+      formatTime(data)
+      response = errorMsg({ code: 0 })
+      response.data = data
+    } else {
+      response = errorMsg({ code: 2 })
+    }
   } else {
-    response = errorMsg({ code: 2 })
+    response = errorMsg({ code: 0 })
+    response.data = []
   }
+  
   return res.send(response);
 }
 

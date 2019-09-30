@@ -119,7 +119,7 @@ CREATE TABLE IF NOT EXISTS `er_book` (
   `parent_series` varchar(40) DEFAULT '' COMMENT '所属系列的 uuid',
   `position` tinyint(1) DEFAULT '1' COMMENT '书籍空间位置，1-个人空间，2-书城',
   `ISBN` varchar(40) DEFAULT '' COMMENT '书籍 ISBN 号',
-  `author` varchar(40) NOT NULL COMMENT '半角逗号分隔的作者 uuid',
+  `author` varchar(256) NOT NULL COMMENT '半角逗号分隔的作者 uuid',
   `front_cover_path` varchar(128) DEFAULT '' COMMENT '封面图片路径',
   `back_cover_path` varchar(128) DEFAULT '' COMMENT '封底图片路径',
   `front_cover_size` int(11) DEFAULT 0 COMMENT '封面图片大小，单位K',

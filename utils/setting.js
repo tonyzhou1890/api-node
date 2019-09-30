@@ -76,6 +76,9 @@ const EnjoyReadingPermission = [
   },
   {
     path: '/enjoyReading/account/shelfBookList'
+  },
+  {
+    path: '/enjoyReading/space/book/list'
   }
 ]
 

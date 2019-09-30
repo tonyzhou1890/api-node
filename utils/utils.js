@@ -71,17 +71,13 @@ const errorMsg = (obj, param) => {
 }
 
 /**
- * 将base64转成图片存储
- * @param {string} path
- * @param {string} base64
+ * 文件存储到磁盘
+ * @param {string} path 路径
+ * @param {string, Buffer} data 存储的数据 
  */
-const base64ToFile = async (path, base64) => {
-  const reg = /^data:image\/\w+;base64,/
-  let str = base64.replace(reg, '')
-  str = str.replace(/\s/g, '+')
-  let dataBuffer = new Buffer(str, 'base64')
+const writeFile = async (path, data) => {
   return new Promise((resolve, reject) => {
-    fs.writeFile(path, dataBuffer, (err) => {
+    fs.writeFile(path, data, (err) => {
       if (err) {
         console.log(err)
         resolve({
@@ -96,6 +92,19 @@ const base64ToFile = async (path, base64) => {
       }
     })
   })
+}
+
+/**
+ * 将base64转成图片存储
+ * @param {string} path
+ * @param {string} base64
+ */
+const base64ToFile = async (path, base64) => {
+  const reg = /^data:image\/\w+;base64,/
+  let str = base64.replace(reg, '')
+  str = str.replace(/\s/g, '+')
+  let dataBuffer = new Buffer(str, 'base64')
+  return writeFile(path, dataBuffer)
 }
 
 /**
@@ -158,6 +167,9 @@ const sizeOfBase64 = (base64, limit) => {
 /**
  * 格式化时间
  * 没有返回值
+ * @param {array} data 含有需要格式化属性的对象数组
+ * @param {string} format 时间格式
+ * @param {string} field 需要格式化的属性名称
  */
 const formatTime = (data, format, field) => {
   let f = format || 'YYYY-MM-DD HH:mm:ss'
@@ -191,6 +203,7 @@ const replaceValueLabelStr = (str, arr, joinChar) => {
 
 module.exports = {
   errorMsg,
+  writeFile,
   base64ToFile,
   strToImageFile,
   sizeOfBase64,
