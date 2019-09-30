@@ -1,7 +1,9 @@
 const humps = require('humps')
+const uuidv1 = require('uuid/v1')
+const moment = require('moment')
 
 const { dbOptions, collection } = require('./database')
-const { query } = require('./query')
+const { query, generateInsertRows } = require('./query')
 const { errorMsg, replaceValueLabelStr } = require('./utils')
 
 /**
@@ -129,8 +131,51 @@ async function queryBookList(params, condition, listSql, totalSql) {
   return response
 }
 
+/**
+ * 获取作者/标签信息，如果不存在，会新增
+ * @param {string} table 要操作的表
+ * @param {string} field 列表元素对应的字段名称
+ * @param {array} list 作者/标签名称数组
+ */
+async function getAuthorsOrTags(table, field, list) {
+  // 查询已有作者
+  let querySql = `SELECT * FROM ${table} WHERE ${field} IN ${list.map(item => `"${item}"`).join(',')}`
+  let res = await query(collection, querySql)
+  if (Array.isArray(res)) {
+    let hasRows = res.map(item => item[field])
+    // 过滤出未有的元素
+    noRows = list.map(item => {
+      if (hasRows.includes(item)) return null
+      return item
+    }).filter(item => item !== null)
+    // 如果有未录入的元素，则插入
+    if (noRows.length) {
+      let rows = noRows.map(item => ({
+        uuid: uuidv1(),
+        [field]: item,
+        createTime: moment().format('YYYY-MM-DD HH:mm:ss')
+      }))
+      // 生成 sql
+      let insertSql = generateInsertRows(table, rows)
+      let insertResult = await query(collection, insertSql)
+      console.log(insertSql, insertResult)
+      // 重新查询
+      res = await query(collection, querySql)
+      if (!Array.isArray(res)) return errorMsg({ code: 2 })
+      res = humps.camelizeKeys(res)
+    }
+    // 生成详情列表
+    return list.map(row => {
+      return res.find(item => item[field] === row)
+    })
+  } else {
+    return errorMsg({ code: 2 })
+  }
+}
+
 module.exports = {
   authorToBook,
   tagToBook,
-  queryBookList
+  queryBookList,
+  getAuthorsOrTags
 }

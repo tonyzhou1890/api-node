@@ -7,7 +7,7 @@ const humps = require('humps')
 const { dbOptions, collection } = require('../utils/database')
 const { query, limit, unique, generateUpdateClause, isUpdateSuccess } = require('../utils/query')
 const { errorMsg, writeFile, strToImageFile, sizeOfBase64, formatTime, replaceValueLabelStr } = require('../utils/utils')
-const { tagToBook, authorToBook, queryBookList } = require('../utils/advancedUtils')
+const { tagToBook, authorToBook, queryBookList, getAuthorsOrTags } = require('../utils/advancedUtils')
 const { spaceBookListSchema, spaceBookCreateSchema, spaceBookUpdateSchema } = require('../schema/enjoyReading')
 const { LoginExpireTime, RegisterAccountType, EnjoyReadingRole } = require('../utils/setting')
 
@@ -162,8 +162,17 @@ async function spaceBookCreateOrUpdate(req, res, next) {
     }
 
     // 处理作者
-    
+    let processedAuthors = await getAuthorsOrTags('er_author', 'name', temp.author)
+    if (!Array.isArray(processedAuthors)) {
+      return res.send(processedAuthors)
+    }
+    temp.author = processedAuthors.map(item => item.uuid).join(',')
     // 处理标签
+    let processedTags = await getAuthorsOrTags('er_tag', 'tag', temp.tag)
+    if (!Array.isArray(processedTags)) {
+      return res.send(processedTags)
+    }
+    temp.tag = processedTags.map(item => item.uuid).join(',')
   }
   return res.send(response);
 }

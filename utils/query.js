@@ -79,6 +79,31 @@ let generateUpdateClause = function(table, obj, fields) {
 }
 
 /**
+ * 生成插入多条记录的语句
+ * @param {string} table 插入的表
+ * @param {array} rows 需要插入的数据
+ * @param {array} fields 需要更新的字段，驼峰式，可选
+ */
+let generateInsertRows = function(table, rows, fields) {
+  let tempRows = humps.decamelize(rows)
+  let tempFields = Array.isArray(fields) ? humps.decamelize(fields) : Object.keys(tempRows[0])
+  let sql = `INSERT ${table} (${tempFields.map(item => `'${item}'`).join(',')}) VALUES `
+  let clause = tempRows.map(row => {
+    let str = '('
+    let values = tempFields.map(key => {
+      if (typeof row[key] === 'string') {
+        return `'${row[key]}'`
+      } else {
+        return row[key]
+      }
+    }).join(',')
+    str += `${values})`
+    return str
+  }).join(',')
+  return sql + clause
+}
+
+/**
  * 更新是否成功
  */
 let isUpdateSuccess = function(result) {
@@ -97,6 +122,7 @@ module.exports =  {
   limit: 10,
   unique,
   generateUpdateClause,
+  generateInsertRows,
   isUpdateSuccess,
   isInsertSuccess
 }
