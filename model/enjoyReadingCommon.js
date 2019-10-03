@@ -86,9 +86,9 @@ async function accountDetail(req, res, next) {
     const uuid = uuidv1()
     const createTime = moment().format('YYYY-MM-DD HH:mm:ss')
     // er_accounts 新增账户信息
-    const sql = `INSERT INTO er_accounts (uuid, account_uuid, role, store_book_num, shelf_book_num, shopping_cart, total_space, private_space, store_space, create_time)
+    const sql = `INSERT INTO er_accounts (uuid, account_uuid, role, shopping_cart, total_space, private_space, store_space, create_time)
     VALUES
-    ('${uuid}', '${req.__record.uuid}', '${EnjoyReadingRole.common.value}', 0, 0, '', ${space}, 0, 0, '${createTime}')`
+    ('${uuid}', '${req.__record.uuid}', '${EnjoyReadingRole.common.value}', '', ${space}, 0, 0, '${createTime}')`
     const result = await query(collection, sql)
     // 如果新增成功并且分配了空间，需要更新拥有空间账户数量信息
     if (isInsertSuccess(result) && space) {

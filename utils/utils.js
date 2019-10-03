@@ -75,7 +75,7 @@ const errorMsg = (obj, param) => {
  * @param {string} path 路径
  * @param {string, Buffer} data 存储的数据 
  */
-const writeFile = async (path, data) => {
+const writeFile = (path, data) => {
   return new Promise((resolve, reject) => {
     fs.writeFile(path, data, (err) => {
       if (err) {
@@ -91,6 +91,34 @@ const writeFile = async (path, data) => {
         })
       }
     })
+  })
+}
+
+/**
+ * 删除磁盘文件
+ * @param {string} path 路径
+ */
+const deleteFile = (path) => {
+  return new Promise((resolve, reject) => {
+    try {
+      fs.accessSync(path)
+      let result = fs.unlinkSync(path)
+      if (result) {
+        resolve({
+          status: false,
+          errorMsg: '删除失败'
+        })
+      } else {
+        resolve({
+          status: true
+        })
+      }
+    } catch (e) {
+      resolve({
+        status: false,
+        errorMsg: '文件不存在/没有权限'
+      })
+    }
   })
 }
 
@@ -204,6 +232,7 @@ const replaceValueLabelStr = (str, arr, joinChar) => {
 module.exports = {
   errorMsg,
   writeFile,
+  deleteFile,
   base64ToFile,
   strToImageFile,
   sizeOfBase64,

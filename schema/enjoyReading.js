@@ -90,17 +90,17 @@ const spaceBookCreateSchema = Joi.object().keys({
   parentSeries: Joi.string().max(40),
   position: Joi.number().integer().min(1).max(2).required(),
   ISBN: Joi.string().max(40),
-  author: Joi.array().min(1).max(5).items(Joi.string().max(20).required()),
-  frontCover: Joi.string().base64(),
-  backCover: Joi.string().base64(),
+  author: Joi.array().min(1).max(5).items(Joi.string().max(20).required()).required(),
+  frontCover: Joi.string(),
+  backCover: Joi.string(),
   text: Joi.string(),
   summary: Joi.string().max(1024),
   free: Joi.number().integer().min(0).max(1),
   score: Joi.number().integer().min(0),
-  discount: Joi.number().integer().min(0).max(0),
+  discount: Joi.number().integer().min(0).max(1),
   discountScore: Joi.number().integer().min(0),
   status: Joi.number().integer().min(0).max(1),
-  tag: Joi.array().min(1).max(5).items(Joi.string().max(20).required()),
+  tag: Joi.array().min(1).max(5).items(Joi.string().max(20).required()).required(),
   sequence: Joi.number()
 })
 
@@ -114,17 +114,24 @@ const spaceBookUpdateSchema = Joi.object().keys({
   parentSeries: Joi.string().max(40),
   position: Joi.number().integer().min(1).max(2).required(),
   ISBN: Joi.string().max(40),
-  author: Joi.array().min(1).max(5).items(Joi.string().max(20).required()),
+  author: Joi.array().min(1).max(5).items(Joi.string().max(20).required()).required(),
   frontCover: Joi.string(),
   backCover: Joi.string(),
   summary: Joi.string().max(1024),
   free: Joi.number().integer().min(0).max(1),
   score: Joi.number().integer().min(0),
-  discount: Joi.number().integer().min(0).max(0),
+  discount: Joi.number().integer().min(0).max(1),
   discountScore: Joi.number().integer().min(0),
   status: Joi.number().integer().min(0).max(1),
-  tag: Joi.array().min(1).max(5).items(Joi.string().max(20).required()),
+  tag: Joi.array().min(1).max(5).items(Joi.string().max(20).required()).required(),
   sequence: Joi.number()
+})
+
+/**
+ * 空间管理书记删除/禁用
+ */
+const spaceBookDeleteSchema = Joi.object().keys({
+  uuid: Joi.string().max(40).required()
 })
 
 module.exports = {
@@ -138,5 +145,6 @@ module.exports = {
   bookRecommendSchema,
   spaceBookListSchema,
   spaceBookCreateSchema,
-  spaceBookUpdateSchema
+  spaceBookUpdateSchema,
+  spaceBookDeleteSchema
 }

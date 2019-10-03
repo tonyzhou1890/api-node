@@ -79,8 +79,6 @@ CREATE TABLE IF NOT EXISTS `er_accounts` (
   `uuid` varchar(40) NOT NULL COMMENT '程序生成的uuid',
   `account_uuid` varchar(40) NOT NULL COMMENT 'accounts 表关联账户 uuid',
   `role` int(1) DEFAULT NULL COMMENT '享阅账户角色：1-普通，2-管理员，3-出版社',
-  `store_book_num` int(11) DEFAULT 0 COMMENT '账户书库书目，包括书城和个人空间，不计算子册',
-  `shelf_book_num` int(11) DEFAULT 0 COMMENT '账户书架书目',
   `shopping_cart` varchar(2000) DEFAULT '' COMMENT '购物车书籍 uuid，包含子册',
   `total_space` int(11) DEFAULT 0 COMMENT '账户拥有的空间，单位M',
   `private_space` float(11) DEFAULT 0 COMMENT '私有空间已用容量，单位M，最多三位小数',

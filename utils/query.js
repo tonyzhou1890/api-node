@@ -85,9 +85,10 @@ let generateUpdateClause = function(table, obj, fields) {
  * @param {array} fields 需要更新的字段，驼峰式，可选
  */
 let generateInsertRows = function(table, rows, fields) {
-  let tempRows = humps.decamelize(rows)
-  let tempFields = Array.isArray(fields) ? humps.decamelize(fields) : Object.keys(tempRows[0])
-  let sql = `INSERT ${table} (${tempFields.map(item => `'${item}'`).join(',')}) VALUES `
+  let tempRows = humps.decamelizeKeys(rows)
+  let tempFields = Array.isArray(fields) ? fields.map(item => humps.decamelize(item)) : Object.keys(tempRows[0])
+  // console.log(rows[0])
+  let sql = `INSERT INTO ${table} (${tempFields.map(item => `\`${item}\``).join(',')}) VALUES `
   let clause = tempRows.map(row => {
     let str = '('
     let values = tempFields.map(key => {
@@ -111,10 +112,17 @@ let isUpdateSuccess = function(result) {
 }
 
 /**
- * 更新插入成功
+ * 插入是否成功
  */
 let isInsertSuccess = function(result) {
   return typeof result === 'object' && result.insertId
+}
+
+/**
+ * 删除是否成功
+ */
+let isDeleteSuccess = function(result) {
+  return typeof result === 'object' && result.affectedRows
 }
 
 module.exports =  {
@@ -124,5 +132,6 @@ module.exports =  {
   generateUpdateClause,
   generateInsertRows,
   isUpdateSuccess,
-  isInsertSuccess
+  isInsertSuccess,
+  isDeleteSuccess
 }

@@ -139,7 +139,7 @@ async function queryBookList(params, condition, listSql, totalSql) {
  */
 async function getAuthorsOrTags(table, field, list) {
   // 查询已有作者
-  let querySql = `SELECT * FROM ${table} WHERE ${field} IN ${list.map(item => `"${item}"`).join(',')}`
+  let querySql = `SELECT * FROM ${table} WHERE ${field} IN (${list.map(item => `"${item}"`).join(',')})`
   let res = await query(collection, querySql)
   if (Array.isArray(res)) {
     let hasRows = res.map(item => item[field])

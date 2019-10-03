@@ -5,14 +5,14 @@ const moment = require('moment')
 const humps = require('humps')
 
 const { dbOptions, collection } = require('../utils/database')
-const { query, limit, unique, generateUpdateClause, generateInsertRows, isUpdateSuccess, isInsertSuccess, isDeleteSuccess } = require('../utils/query')
-const { errorMsg, writeFile, deleteFile, strToImageFile, sizeOfBase64, formatTime, replaceValueLabelStr } = require('../utils/utils')
-const { tagToBook, authorToBook, queryBookList, getAuthorsOrTags } = require('../utils/advancedUtils')
-const { spaceBookListSchema, spaceBookCreateSchema, spaceBookUpdateSchema, spaceBookDeleteSchema } = require('../schema/enjoyReading')
+const { query, limit, unique, generateUpdateClause, isUpdateSuccess, isInsertSuccess } = require('../utils/query')
+const { errorMsg, writeFile, strToImageFile, sizeOfBase64, formatTime, replaceValueLabelStr } = require('../utils/utils')
+const { tagToBook, authorToBook, queryBookList, getAuthorsOrTags, generateInsertRows } = require('../utils/advancedUtils')
+const { spaceBookListSchema, spaceBookCreateSchema, spaceBookUpdateSchema } = require('../schema/enjoyReading')
 const { LoginExpireTime, RegisterAccountType, EnjoyReadingRole } = require('../utils/setting')
 
 /**
- * 空间管理书籍 列表
+ * 书库书籍 列表
  */
 async function spaceBookList(req, res, next) {
   let response = {}
@@ -69,6 +69,7 @@ async function spaceBookList(req, res, next) {
         // 统计子册，无意义，只是为了使用 queryBookList 这个方法
         let countChildrenSql = `SELECT COUNT(uuid) FROM er_book WHERE parent_series IN (${temp})`
         let children = await queryBookList({}, condition, childrenSql, countChildrenSql)
+        console.log(children)
         // 如果没有报错
         if (children.code === 0) {
           // 如果有子册，则分类排序
@@ -120,17 +121,11 @@ async function spaceBookCreateOrUpdate(req, res, next) {
       }
     })
 
-    // 只能新增单本
-    if (temp.type !== 1) {
-      response = errorMsg({ code: 24 }, '只能新增单本')
-      return res.send(response)
-    }
-
     // 如果是编辑，需要查询原来的书籍信息，以及一些检查
     let oldBook = null 
     if (temp.uuid) {
       // 查询原书籍信息
-      oldBook = await unique(collection, 'er_book', 'uuid', temp.uuid)
+      oldBook = await unique(collection, 'er_book', 'uuid', )
       if (oldBook.length) {
         oldBook = humps.camelizeKeys(oldBook[0])
       } else {
@@ -158,10 +153,12 @@ async function spaceBookCreateOrUpdate(req, res, next) {
       }
     }
 
-    // 处理封面，封底，内容
-    response = await dealBookContent(temp, oldBook, ERRecord) || {}
-    if (response.code !== undefined && response.code !== 0) {
-      return res.send(response)
+    // 如果是单本或者系列子册，需要处理封面，封底，内容
+    if (temp.type === 1 || temp.parentSeries) {
+      response = await dealBookContent(temp, oldBook, ERRecord) || {}
+      if (response.code !== undefined && response.code !== 0) {
+        return res.send(response)
+      }
     }
 
     // 处理作者
@@ -177,18 +174,19 @@ async function spaceBookCreateOrUpdate(req, res, next) {
     }
     temp.tag = processedTags.map(item => item.uuid).join(',')
 
-    // 确保 parentSeries 为空
-    temp.parentSeries = ''
+    // 如果单本，确保 parentSeries 为空
+    if (temp.type ==== 1) {
+      temp.parentSeries = ''
+    }
 
     // 如果是新增
     if (!temp.uuid) {
       response = await dealBookInsert(req, res, next, temp)
     } else {
-      // 否则是编辑
       response = await dealBookUpdate(req, res, next, temp)
     }
 
-    if (response === undefined || !(response.constructor === '{}' && response.code)) {
+    if (!(response.constructor === '{}' && response.code)) {
       response = errorMsg({code: 0})
     }
   }
@@ -213,15 +211,15 @@ async function dealBookContent(temp, oldBook, ERRecord) {
   if (!temp.uuid && !temp.text) {
     return errorMsg({ code: 24 }, '内容不能为空')
   }
-  if (!temp.uuid && temp.text.length > 3000000) {
-    return errorMsg({ code: 24 }, '内容不能超过300万个字符')
+  if (!temp.uuid && temp.text.length > 300000) {
+    return errorMsg({ code: 24 }, '内容不能超过30万个字符')
   }
 
   // 保存封面
   // 封面文件名
   temp.frontCoverName = typeof temp.frontCoverName === 'string' ? temp.frontCoverName + Date.now() + '' : Date.now() + ''
   // 保存封面
-  const processedFrontCover = await strToImageFile('../store/enjoy_reading/bookImg/', temp.frontCoverName, temp.frontCover || '')
+  const processedFrontCover = await strToImageFile('../store/images/enjoy_reading/bookImg/', temp.frontCoverName, temp.frontCover || '')
   if (processedFrontCover.status) {
     temp.frontCoverPath = processedFrontCover.path.replace(/^..\/store/, '')
     temp.frontCoverSize = Math.ceil(frontCoverInfo.size || 0)
@@ -233,7 +231,7 @@ async function dealBookContent(temp, oldBook, ERRecord) {
   // 封底文件名
   temp.backCoverName = typeof temp.backCoverName === 'string' ? temp.backCoverName + Date.now() + '' : Date.now() + ''
   // 保存封面
-  const processedBackCover = await strToImageFile('../store/enjoy_reading//bookImg/', temp.backCoverName, temp.backCover || '')
+  const processedBackCover = await strToImageFile('../store/images/enjoy_reading/bookImg/', temp.backCoverName, temp.backCover || '')
   if (processedBackCover.status) {
     temp.backCoverPath = processedBackCover.path.replace(/^..\/store/, '')
     temp.backCoverSize = Math.ceil(backCoverInfo.size || 0)
@@ -242,7 +240,7 @@ async function dealBookContent(temp, oldBook, ERRecord) {
   }
 
   // 新增，保存内容
-  if (!temp.uuid) {
+  if (temp.uuid) {
     // 文本内容文件名
     let textName = ''
     const u = await unique(collection, 'er_book', 'name', temp.name)
@@ -252,7 +250,7 @@ async function dealBookContent(temp, oldBook, ERRecord) {
       textName = temp.name + ''
     }
     // 保存 txt 文件
-    const processedText = await writeFile('../store/enjoy_reading/book/' + textName + '.txt', temp.text)
+    const processedText = await writeFile(textName + '.txt', temp.text)
     // 保存成功
     if (processedText.status) {
       temp.textPath = processedText.path.replace(/^..\/store/, '')
@@ -272,7 +270,7 @@ async function dealBookContent(temp, oldBook, ERRecord) {
 
   // 计算使用空间大小增量
   temp.incrementSize = temp.uuid ? temp.bookSize - oldBook.bookSize : temp.bookSize
-  temp.incrementSize = Number((temp.incrementSize / 1024).toFixed(3))
+  temp.incrementSize = (temp.bookSize / 1024).toFixed(3)
 
   // 检查空间大小是否足够
   if (temp.incrementSize > (ERRecord.totalSpace - ERRecord.privateSpace - ERRecord.storeSpace)) {
@@ -283,21 +281,52 @@ async function dealBookContent(temp, oldBook, ERRecord) {
 /**
  * 处理新增
  */
-async function dealBookInsert(req, res, next, temp) {
-  dealDefault(req, temp)
+async function addBook(req, res, next, temp) {
+  dealDefault(temp)
   let fields = ['uuid', 'uploadAccountUuid', 'name', 'type', 'parentSeries', 'position', 'author', 'frontCoverPath', 'backCoverPath', 'frontCoverSize', 'backCoverSize', 'textPath', 'textSize', 'bookSize', 'summary', 'free', 'score', 'discount', 'discountScore', 'status', 'tag', 'sequence', 'createTime']
 
   let insertBookSql = generateInsertRows('er_book', [temp], fields)
   let insertBookResult = await query(collection, insertBookSql)
   if (isInsertSuccess(insertBookResult)) {
+    // 如果分册定价，要更新系列定价
+    if (temp.type === 2) {
+      let parentSql = `SELECT * FROM er_book WHERE status = 0 && parent_series = '${temp.parentSeries}'`
+      await rows = await query(collection, parentSql)
+      if (Array.isArray(rows) && rows.length) {
+        let updateObj = {}
+        updateObj.discount = rows.some(item => item.discount && item.) ? 1 : 0
+        updateObj.score = 0
+        updateObj.discountScore = 0
+        rows.map(item => {
+          if (item.free === 0) {
+            updateObj.score += item.score
+            if (item.discount) {
+              updateObj.discountScore += item.discountScore
+            } else {
+              updateObj.discountScore += item.score
+            }
+          }
+        })
+      }
+      let updateParentSql = `UPDATE er_book SET 
+        score = ${updateObj.score},
+        discount = ${updateObj.discount},
+        discount_score = ${updateObj.discountScore} 
+        WHERE uuid = '${temp.parentSeries}'
+      `
+      let updateParentResult = await query(collection, updateParentSql)
+      if (!isUpdateSuccess(updateParentResult)) {
+        return errorMsg({code: 24}, '更新父系列失败')
+      }
+    }
     // 插入 er_account_book_info 记录
     let accountBookObj = {
       uuid: uuidv1(),
       bookUuid: temp.uuid,
-      accountUuid: req.__record.uuid,
+      account: req.__record.uuid,
       percent: 0,
       point: 0,
-      length: temp.text ? temp.text.length : 0,
+      length: temp.text ? temp.text.length || 0,
       readingStatus: 0,
       onShelf: 0,
       updateTime: moment().format('YYYY-MM-DD HH:mm:ss'),
@@ -315,9 +344,11 @@ async function dealBookInsert(req, res, next, temp) {
     } else {
       accountObj.storeSpace = (temp.incrementSize || 0) + req.__enjoyReadingRecord.storeSpace
     }
-    
-    let accountSql = generateUpdateClause('er_accounts', accountObj) + ` WHERE uuid = '${req.__enjoyReadingRecord.uuid}'`
-    let accountResult = await query(collection, accountSql)
+    if (!temp.parentSeries) {
+      accountObj.storeBookNum = req.__enjoyReadingRecord.storeBookNum + 1
+    }
+    let accountSql = generateUpdateClause('er_account', accountObj) + ` WHERE uuid = '${req.__enjoyReadingRecord.uuid}'`
+    let accountResult = await query(accountSql)
     if (!isUpdateSuccess(accountResult)) {
       return errorMsg({code: 4})
     }
@@ -327,39 +358,9 @@ async function dealBookInsert(req, res, next, temp) {
 }
 
 /**
- * 处理更新
- */
-async function dealBookUpdate(req, res, next, temp, oldBook) {
-  dealDefault(req, temp)
-  let fields = ['name', 'type', 'position', 'author', 'frontCoverPath', 'backCoverPath', 'frontCoverSize', 'backCoverSize', 'bookSize', 'summary', 'free', 'score', 'discount', 'discountScore', 'status', 'tag']
-
-  let updateBookSql = generateUpdateClause('er_book', temp, fields) + ` WHERE uuid = '${temp.uuid}'`
-  let updateBookResult = await query(collection, updateBookSql)
-  if (isUpdateSuccess(updateBookResult)) {
-    if (temp.incrementSize) {
-      // 更新账户信息
-      let accountObj = {}
-      if (temp.position === 1) {
-        accountObj.privateSpace = (temp.incrementSize || 0) + req.__enjoyReadingRecord.privateSpace
-      } else {
-        accountObj.storeSpace = (temp.incrementSize || 0) + req.__enjoyReadingRecord.storeSpace
-      }
-      
-      let accountSql = generateUpdateClause('er_account', accountObj) + ` WHERE uuid = '${req.__enjoyReadingRecord.uuid}'`
-      let accountResult = await query(accountSql)
-      if (!isUpdateSuccess(accountResult)) {
-        return errorMsg({code: 4})
-      }
-    }
-  } else {
-    return errorMsg({ code: 4 })
-  }
-}
-
-/**
  * 处理默认值
  */
-function dealDefault(req, temp) {
+function dealDefault(temp) {
   temp.uuid = temp.uuid || uuidv1()
   temp.uploadAccountUuid = temp.upload_account_uuid || req.__record.uuid
   temp.ISBN = temp.ISBN || ''
@@ -373,98 +374,7 @@ function dealDefault(req, temp) {
   temp.createTime = moment().format('YYYY-MM-DD HH:mm:ss')
 }
 
-/**
- * 空间管理书籍删除
- */
-async function spaceBookDelete(req, res, next) {
-  let response = {}
-  const vali = Joi.validate(req.body, spaceBookDeleteSchema, {allowUnknown: true})
-  if (vali.error) {
-    response = errorMsg({ code: 24 }, vali.error.details[0].message)
-  } else {
-    // 查询记录
-    let book = await unique(collection, 'er_book', 'uuid', req.body.uuid)
-    if (book.length) {
-      let bookRecord = humps.camelizeKeys(book[0])
-      // 如果是书城的书，直接禁用
-      if (bookRecord.position === 2) {
-        let disableSql = generateUpdateClause('er_book', { status: 1 }) + ` WHERE uuid = '${bookRecord.uuid}'`
-        let disableResult = await query(collection, disableSql)
-        if (isUpdateSuccess(disableResult)) {
-          response = errorMsg({ code: 0 })
-        } else {
-          response = errorMsg({ code: 5 })
-        }
-      } else {
-        // 个人空间里的书籍是真删除--记录、图片、文本
-        // 删除 er_book 记录
-        let deleteSql = `DELETE FROM er_book WHERE uuid = '${bookRecord.uuid}'`
-        let deleteResult = await query(collection, deleteSql)
-        if (isDeleteSuccess(deleteResult)) {
-          // 更新个人账户空间大小
-          let decreasedSpace = Number((bookRecord.bookSize / 1024).toFixed(3))
-          let updateObj = {}
-          if (bookRecord.position === 1) {
-            updateObj.privateSpace = req.__enjoyReadingRecord.privateSpace - decreasedSpace
-            if (updateObj.privateSpace < 0) updateObj.privateSpace = 0
-            else updateObj.privateSpace = Number(updateObj.privateSpace.toFixed(3))
-          } else {
-            updateObj.storeSpace = req.__enjoyReadingRecord.storeSpace - decreasedSpace
-            if (updateObj.storeSpace < 0) updateObj.storeSpace = 0
-            else updateObj.storeSpace = Number(updateObj.storeSpace.toFixed(3))
-          }
-          let updateAccountSql = generateUpdateClause('er_accounts', updateObj) + ` WHERE uuid = '${req.__enjoyReadingRecord.uuid}'`
-          if (isUpdateSuccess(await query(collection, updateAccountSql))) {
-            // 删除 er_account_book_info 记录
-            let deleteAccountBookSql = `DELETE FROM er_account_book_info WHERE book_uuid = '${bookRecord.uuid}'`
-            if (isDeleteSuccess(await query(collection, deleteAccountBookSql))) {
-              // 删除相关文件
-              // 删除封面文件
-              if (bookRecord.frontCoverPath && bookRecord.frontCoverPath.includes('enjoy_reading')) {
-                let deleteFrontCoverResult = await deleteFile('../store' + bookRecord.frontCoverPath)
-                if (!deleteFrontCoverResult.status) {
-                  response = errorMsg({ code: 24 }, '删除封面失败')
-                  return res.send(response)
-                }
-              }
-              // 删除封底文件
-              if (bookRecord.backCoverPath && bookRecord.backCoverPath.includes('enjoy_reading')) {
-                let deleteBackCoverPath = await deleteFile('../store' + bookRecord.backCoverPath)
-                if (!deleteBackCoverResult.status) {
-                  response = errorMsg({ code: 24 }, '删除封底失败')
-                  return res.send(response)
-                }
-              }
-              // 删除文本
-              if (bookRecord.textPath && bookRecord.textPath.includes('enjoy_reading')) {
-                let deleteTextResult = await deleteFile('../store' + bookRecord.textPath)
-                if (!deleteTextResult.status) {
-                  response = errorMsg({ code: 24 }, '删除文本失败')
-                  return res.send(response)
-                }
-              }
-
-              // 如果都没有问题，则代表成功删除
-              response = errorMsg({ code: 0 })
-            } else {
-              response = errorMsg({ code: 5 })
-            }
-          } else {
-            response = errorMsg({ code: 4 })
-          }
-        } else {
-          response = errorMsg({ code: 5 })
-        }
-      }
-    } else {
-      response = errorMsg({ code: 40 })
-    }
-  }
-  return res.send(response)
-}
-
 module.exports = {
   spaceBookList,
-  spaceBookCreateOrUpdate,
-  spaceBookDelete
+  spaceBookCreateOrUpdate
 }

@@ -5,7 +5,7 @@ const { homeBannerList } = require('../model/enjoyReadingBanner')
 const { tagList, accountDetail, accountLoginScore } = require('../model/enjoyReadingCommon')
 const { latestList, discountList, freeList, tagBookList, searchBookList, storeBookList, shelfBookList } = require('../model/enjoyReadingBookList')
 const { bookDetail, bookRecommend } = require('../model/enjoyReadingBook')
-const { spaceBookList } = require('../model/enjoyReadingSpace')
+const { spaceBookList, spaceBookCreateOrUpdate, spaceBookDelete } = require('../model/enjoyReadingSpace')
 
 /**
  * 首页 banner 列表
@@ -76,5 +76,15 @@ router.post('/book/recommend', bookRecommend)
  * 空间管理书籍列表
  */
 router.post('/space/book/list', spaceBookList)
+
+/**
+ * 空间管理书籍新增/编辑
+ */
+router.post('/space/book/createOrUpdate', spaceBookCreateOrUpdate)
+
+/**
+ * 空间管理书籍删除
+ */
+router.post('/space/book/delete', spaceBookDelete)
 
 module.exports = router
