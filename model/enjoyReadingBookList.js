@@ -200,7 +200,7 @@ async function storeBookList(req, res, next) {
     const start = (params.page - 1) * params.rows
 
     // 从属系列为空，则代表是单本/系列名
-    let condition = ` WHERE er_book.parent_series = '' AND AND er_book.name LIKE '%${params.keyword}%'`
+    let condition = ` WHERE er_book.parent_series = '' AND er_book.name LIKE '%${params.keyword}%'`
 
     // 如果需要根据书籍位置过滤，则添加过滤条件
     if (params.position) {
@@ -233,7 +233,7 @@ async function shelfBookList(req, res, next) {
   //  在书架上
   let condition = ` WHERE (er_book.type = 1 OR er_book.parent_series != '') AND er_book.uuid = er_account_book_info.book_uuid AND er_account_book_info.account_uuid = '${req.__record.uuid}' AND er_account_book_info.on_shelf = 1 ORDER BY er_account_book_info.update_time DESC`
 
-  let listSql = `SELECT ${['uuid', 'name', 'type', 'author', 'front_cover_path', 'free', 'score', 'discount', 'discount_score'].map(item => 'er_book.' + item).join(',')}, ${['create_time', 'update_time', 'percent', 'point', 'length', 'reading_status'].map(item => 'er_account_book_info.' + item).join(',')} 
+  let listSql = `SELECT ${['uuid', 'name', 'type', 'author', 'front_cover_path', 'length', 'free', 'score', 'discount', 'discount_score'].map(item => 'er_book.' + item).join(',')}, ${['create_time', 'update_time', 'percent', 'point', 'reading_status'].map(item => 'er_account_book_info.' + item).join(',')} 
     FROM 
     er_book, er_account_book_info${condition}`
 
