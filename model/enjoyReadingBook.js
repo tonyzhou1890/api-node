@@ -8,7 +8,7 @@ const { dbOptions, collection } = require('../utils/database')
 const { query, limit, unique, generateUpdateClause, isUpdateSuccess, isInsertSuccess } = require('../utils/query')
 const { errorMsg, strToImageFile, sizeOfBase64, formatTime } = require('../utils/utils')
 const { authorToBook, tagToBook, queryBookList } = require('../utils/advancedUtils')
-const { bookDetailSchema, bookRecommendSchema } = require('../schema/enjoyReading')
+const { bookDetailSchema, bookRecommendSchema, readingInfoUpdateSchema } = require('../schema/enjoyReading')
 const { LoginExpireTime, RegisterAccountType, EnjoyReadingRole } = require('../utils/setting')
 
 /**
@@ -32,14 +32,22 @@ async function bookDetail(req, res, next) {
       result = await authorToBook(result)
       // 处理标签 uuid
       result = await tagToBook(result)
-      // 添加字段是否已经拥有
+      // 添加字段是否已经拥有以及书籍阅读信息
       if (req.__enjoyReadingRecord) {
-        let hasBooksSql = `SELECT uuid FROM er_account_book_info WHERE account_uuid = '${req.__enjoyReadingRecord.accountUuid}'`
+        let hasBooksSql = `SELECT * FROM er_account_book_info WHERE account_uuid = '${req.__enjoyReadingRecord.accountUuid}'`
         let books = await query(collection, hasBooksSql)
+        books = humps.camelizeKeys(books)
+        formatTime(books)
+        formatTime(books, '', 'updateTime')
         if (Array.isArray(books)) {
-          let uuids = books.map(item => item.bookUuid)
           result.map(item => {
-            item.has = uuids.includes(item.uuid) ? 1 : 0
+            let book = books.find(book => book.bookUuid === item.uuid)
+            if (book) {
+              item.has = 1
+              item.readingInfo = book
+            } else {
+              item.has = 0
+            }
           })
         } else {
           // 报错，则直接返回
@@ -123,7 +131,38 @@ async function bookRecommend(req, res, next) {
   return res.send(response);
 }
 
+/**
+ * 更新 er_account_book_info 信息
+ */
+async function readingInfoUpdate(req, res, next) {
+  let response = {}
+  const vali = Joi.validate(req.body, readingInfoUpdateSchema, {allowUnknown: true})
+  if (vali.error) {
+    response = errorMsg({ code: 24 }, vali.error.details[0].message)
+  } else {
+    let fields = ['percent', 'point', 'readingStatus', 'onShelf', 'updateTime']
+    if (req.body.percent !== undefined || req.body.point !== undefined) {
+      req.body.updateTime = moment().format('YYYY-MM-DD HH:mm:ss')
+    } else {
+      req.body.updateTime = undefined
+    }
+    // 检查是否有需要更新的字段
+    if (fields.some(field => req.body[field] !== undefined)) {
+      let updateSql = generateUpdateClause('er_account_book_info', req.body, fields) + ` WHERE uuid = '${req.body.uuid}'`
+      if (isUpdateSuccess(await query(collection, updateSql))) {
+        response = errorMsg({ code: 0 })
+      } else {
+        response = errorMsg({ code: 4 })
+      }
+    } else {
+      response = errorMsg({ code: 0 })
+    }
+  }
+  return res.send(response)
+}
+
 module.exports = {
   bookDetail,
-  bookRecommend
+  bookRecommend,
+  readingInfoUpdate
 }

@@ -1,10 +1,12 @@
 const humps = require('humps')
 const uuidv1 = require('uuid/v1')
 const moment = require('moment')
+const Joi = require('joi')
 
 const { dbOptions, collection } = require('./database')
-const { query, generateInsertRows } = require('./query')
+const { query, generateInsertRows, generateUpdateClause, isInsertSuccess, isUpdateSuccess } = require('./query')
 const { errorMsg, replaceValueLabelStr } = require('./utils')
+const { updateScoreSchema } = require('../schema/enjoyReading')
 
 /**
  * 查询书本的作者并替换author的值
@@ -173,9 +175,40 @@ async function getAuthorsOrTags(table, field, list) {
   }
 }
 
+/**
+ * 更新积分--插入积分记录，更新账户积分
+ * @param {object} params 相关信息
+ */
+async function updateScore(params) {
+  let response = {}
+  const vali = Joi.validate(params, updateScoreSchema, { allowUnknown: true })
+  if (vali.error) {
+    response = errorMsg({ code: 24 }, vali.error.details[0].message)
+  } else {
+    // 添加 uuid 和 createTime 字段
+    params.uuid = uuidv1(),
+    params.createTime = moment().format('YYYY-MM-DD HH:mm:ss')
+    // 插入积分记录
+    const insertSql = generateInsertRows('score_record', [params])
+    if (isInsertSuccess(await query(collection, insertSql))) {
+      // 更新账户积分
+      const updateSql = generateUpdateClause('accounts', { score: params.totalScore}) + ` WHERE uuid = '${params.accountUuid}'`
+      if(isUpdateSuccess(await query(collection, updateSql))) {
+        response = errorMsg({ code: 0 })
+      } else {
+        response = errorMsg({ code: 4 })
+      }
+    } else {
+      response = errorMsg({ code: 3 })
+    }
+  }
+  return response
+}
+
 module.exports = {
   authorToBook,
   tagToBook,
   queryBookList,
-  getAuthorsOrTags
+  getAuthorsOrTags,
+  updateScore
 }

@@ -85,6 +85,18 @@ const EnjoyReadingPermission = [
   },
   {
     path: '/enjoyReading/space/book/delete'
+  },
+  {
+    path: '/enjoyReading/shoppingCart/list'
+  },
+  {
+    path: '/enjoyReading/shoppingCart/add'
+  },
+  {
+    path: '/enjoyReading/shoppingCart/subtract'
+  },
+  {
+    path: '/enjoyReading/shoppingCart/settle'
   }
 ]
 

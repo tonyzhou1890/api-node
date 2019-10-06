@@ -7,7 +7,7 @@ const humps = require('humps')
 const { dbOptions, collection } = require('../utils/database')
 const { query, limit, unique, generateUpdateClause, generateInsertRows, isUpdateSuccess, isInsertSuccess, isDeleteSuccess } = require('../utils/query')
 const { errorMsg, writeFile, deleteFile, strToImageFile, sizeOfBase64, formatTime, replaceValueLabelStr } = require('../utils/utils')
-const { tagToBook, authorToBook, queryBookList, getAuthorsOrTags } = require('../utils/advancedUtils')
+const { tagToBook, authorToBook, queryBookList, getAuthorsOrTags, updateScore } = require('../utils/advancedUtils')
 const { spaceBookListSchema, spaceBookCreateSchema, spaceBookUpdateSchema, spaceBookDeleteSchema } = require('../schema/enjoyReading')
 const { LoginExpireTime, RegisterAccountType, EnjoyReadingRole } = require('../utils/setting')
 
@@ -151,11 +151,12 @@ async function spaceBookCreateOrUpdate(req, res, next) {
         response = errorMsg({ code: 24 }, '该账户无法添加书籍到书城')
         return res.send(response)
       }
-      // 出版社需要 ISBN 号
-      if (ERRecord.role === EnjoyReadingRole.publisher.value && !temp.ISBN) {
-        response = errorMsg({ code: 24 }, 'ISBN 不能为空')
-        return res.send(response)
-      }
+      // 出版社需要 ISBN 号，
+      // ISBN 改成非必填，并且可以重复
+      // if (ERRecord.role === EnjoyReadingRole.publisher.value && !temp.ISBN) {
+      //   response = errorMsg({ code: 24 }, 'ISBN 不能为空')
+      //   return res.send(response)
+      // }
     }
 
     // 处理封面，封底，内容
@@ -255,8 +256,9 @@ async function dealBookContent(temp, oldBook, ERRecord) {
     const processedText = await writeFile('../store/enjoy_reading/book/' + textName + '.txt', temp.text)
     // 保存成功
     if (processedText.status) {
+      temp.length = temp.text.length
       temp.textPath = processedText.path.replace(/^..\/store/, '')
-      temp.textSize = Math.ceil(temp.text.length * 3 / 1024)
+      temp.textSize = Math.ceil(temp.length * 3 / 1024)
     } else {
       return errorMsg({ code: 24 }, '正文内容失败')
     }
@@ -285,7 +287,7 @@ async function dealBookContent(temp, oldBook, ERRecord) {
  */
 async function dealBookInsert(req, res, next, temp) {
   dealDefault(req, temp)
-  let fields = ['uuid', 'uploadAccountUuid', 'name', 'type', 'parentSeries', 'position', 'author', 'frontCoverPath', 'backCoverPath', 'frontCoverSize', 'backCoverSize', 'textPath', 'textSize', 'bookSize', 'summary', 'free', 'score', 'discount', 'discountScore', 'status', 'tag', 'sequence', 'createTime']
+  let fields = ['uuid', 'uploadAccountUuid', 'name', 'type', 'parentSeries', 'position', 'author', 'frontCoverPath', 'backCoverPath', 'frontCoverSize', 'backCoverSize', 'textPath', 'textSize', 'bookSize', 'length', 'summary', 'free', 'score', 'discount', 'discountScore', 'status', 'tag', 'sequence', 'createTime']
 
   let insertBookSql = generateInsertRows('er_book', [temp], fields)
   let insertBookResult = await query(collection, insertBookSql)
@@ -297,7 +299,6 @@ async function dealBookInsert(req, res, next, temp) {
       accountUuid: req.__record.uuid,
       percent: 0,
       point: 0,
-      length: temp.text ? temp.text.length : 0,
       readingStatus: 0,
       onShelf: 0,
       updateTime: moment().format('YYYY-MM-DD HH:mm:ss'),
@@ -320,6 +321,19 @@ async function dealBookInsert(req, res, next, temp) {
     let accountResult = await query(collection, accountSql)
     if (!isUpdateSuccess(accountResult)) {
       return errorMsg({code: 4})
+    } else {
+      // 更新积分记录
+      let params = {
+        score: '+10',
+        totalSql: req.__record + 10,
+        way: '上传书籍' + `《${temp.name}》`,
+        appUuid: req.__appInfo.uuid,
+        accountUuid: req.__record.uuid
+      }
+      let scoreResponse = await updateScore(params)
+      if (scoreResponse.code) {
+        return scoreResponse
+      }
     }
   } else {
     return errorMsg({code: 3})

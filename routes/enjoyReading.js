@@ -4,8 +4,9 @@ const router = express.Router()
 const { homeBannerList } = require('../model/enjoyReadingBanner')
 const { tagList, accountDetail, accountLoginScore } = require('../model/enjoyReadingCommon')
 const { latestList, discountList, freeList, tagBookList, searchBookList, storeBookList, shelfBookList } = require('../model/enjoyReadingBookList')
-const { bookDetail, bookRecommend } = require('../model/enjoyReadingBook')
+const { bookDetail, bookRecommend, readingInfoUpdate } = require('../model/enjoyReadingBook')
 const { spaceBookList, spaceBookCreateOrUpdate, spaceBookDelete } = require('../model/enjoyReadingSpace')
+const { shoppingCartList, shoppingCartAdd, shoppingCartSubtract, shoppingCartSettle } = require('../model/enjoyReadingShoppingCart')
 
 /**
  * 首页 banner 列表
@@ -73,6 +74,11 @@ router.post('/book/detail', bookDetail)
 router.post('/book/recommend', bookRecommend)
 
 /**
+ * 书籍阅读信息更新
+ */
+router.post('/book/readingInfoUpdate', readingInfoUpdate)
+
+/**
  * 空间管理书籍列表
  */
 router.post('/space/book/list', spaceBookList)
@@ -86,5 +92,25 @@ router.post('/space/book/createOrUpdate', spaceBookCreateOrUpdate)
  * 空间管理书籍删除
  */
 router.post('/space/book/delete', spaceBookDelete)
+
+/**
+ * 购物车列表
+ */
+router.post('/shoppingCart/list', shoppingCartList)
+
+/**
+ * 购物车新增
+ */
+router.post('/shoppingCart/add', shoppingCartAdd)
+
+/**
+ * 购物车移除
+ */
+router.post('/shoppingCart/subtract', shoppingCartSubtract)
+
+/**
+ * 购物车结算
+ */
+router.post('/shoppingCart/settle', shoppingCartSettle)
 
 module.exports = router

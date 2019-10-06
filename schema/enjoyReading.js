@@ -72,6 +72,17 @@ const bookRecommendSchema = Joi.object().keys({
 })
 
 /**
+ * 书籍阅读信息更新
+ */
+const readingInfoUpdateSchema = Joi.object().keys({
+  uuid: Joi.string().required(),
+  percent: Joi.number().precision(2),
+  point: Joi.number(),
+  onShelf: Joi.number().min(0).max(1),
+  readingStatus: Joi.number().min(0).max(1)
+})
+
+/**
  * 空间管理书籍列表
  */
 const spaceBookListSchema = Joi.object().keys({
@@ -134,6 +145,38 @@ const spaceBookDeleteSchema = Joi.object().keys({
   uuid: Joi.string().max(40).required()
 })
 
+/**
+ * 购物车添加
+ */
+const shoppingCartAddSchema = Joi.object().keys({
+  uuid: Joi.string().max(40).required()
+})
+
+/**
+ * 购物车移除
+ */
+const shoppingCartSubtractSchema = Joi.object().keys({
+  uuid: [Joi.string().max(40).required(), Joi.array().items(Joi.string().max(40)).required()]
+})
+
+/**
+ * 购物车结算
+ */
+const shoppingCartSettleSchema = Joi.object().keys({
+  uuid: [Joi.string().max(40).required(), Joi.array().items(Joi.string().max(40)).required()]
+})
+
+/**
+ * 积分更新
+ */
+const updateScoreSchema = Joi.object().keys({
+  score: Joi.string().required(),
+  totalScore: Joi.number().required(),
+  way: Joi.string().required(),
+  appUuid: Joi.string().max(40).required(),
+  accountUuid: Joi.string().max(40).required()
+})
+
 module.exports = {
   specialListLatestSchema,
   specialListDiscountSchema,
@@ -143,8 +186,13 @@ module.exports = {
   storeBookListSchema,
   bookDetailSchema,
   bookRecommendSchema,
+  readingInfoUpdateSchema,
   spaceBookListSchema,
   spaceBookCreateSchema,
   spaceBookUpdateSchema,
-  spaceBookDeleteSchema
+  spaceBookDeleteSchema,
+  shoppingCartAddSchema,
+  shoppingCartSubtractSchema,
+  shoppingCartSettleSchema,
+  updateScoreSchema
 }
