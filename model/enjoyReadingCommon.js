@@ -51,6 +51,45 @@ async function tagList(req, res, next) {
 }
 
 /**
+ * author 列表
+ */
+async function authorList(req, res, next) {
+  let response = {}
+
+  // 拥有有效书籍的作者
+  // 单本或系列名
+  // 位于书城
+  // 未禁用
+  const bookUuidSql = `SELECT author from er_book WHERE parent_series = '' AND position = 2 AND status = 0`
+  let uuids = await query(collection, bookUuidSql)
+
+  if (Array.isArray(uuids) && uuids.length) {
+    let authors = []
+    uuids.map(item => {
+      authors = authors.concat(item.author.split(','))
+    })
+    uuids = [...new Set(authors)]
+
+    const sql = `SELECT uuid, name, create_time FROM er_author WHERE uuid IN (${uuids.map(item => `'${item}'`).join(',')})`
+    const result = await query(collection, sql)
+
+    if (Array.isArray(result)) {
+      let data = humps.camelizeKeys(result)
+      formatTime(data)
+      response = errorMsg({ code: 0 })
+      response.data = data
+    } else {
+      response = errorMsg({ code: 2 })
+    }
+  } else {
+    response = errorMsg({ code: 0 })
+    response.data = []
+  }
+  
+  return res.send(response);
+}
+
+/**
  * 账户信息
  */
 async function accountDetail(req, res, next) {
@@ -164,6 +203,7 @@ async function accountLoginScore(req, res, next) {
 
 module.exports = {
   tagList,
+  authorList,
   accountDetail,
   accountLoginScore
 }

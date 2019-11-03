@@ -487,13 +487,13 @@ router.post('/score/list', async (req, res, next) => {
       filter: req.body.filter || 1
     }
 
-    let condition = ''
+    let condition = ` WHERE account_uuid = '${req.__record.uuid}'`
     if (params.filter !== 1) {
-      condition += ` WHERE score ${params.filter === 2 ? '> 0' : '< 0'}`
+      condition += ` AND score ${params.filter === 2 ? '> 0' : '< 0'}`
     }
 
     const start = (params.page - 1) * params.rows
-    const sql = `SELECT uuid, score, total_score, way, create_time FROM score_record${condition} LIMIT ${start}, ${params.rows}`
+    const sql = `SELECT uuid, score, total_score, way, create_time FROM score_record${condition} ORDER BY create_time DESC LIMIT ${start}, ${params.rows}`
     const result = await query(collection, sql)
 
     const countSql = `SELECT COUNT(uuid) FROM score_record${condition}`

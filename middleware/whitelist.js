@@ -5,6 +5,7 @@ const enjoyReadingPrefix = '/enjoyReading'
 const enjoyReadingWhitelist = [
   '/banner/homeList',
   '/tag/list',
+  '/author/list',
   '/latest/list',
   '/discount/list',
   '/free/list',

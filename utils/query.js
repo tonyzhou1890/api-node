@@ -5,11 +5,15 @@ const { dbOptions } = require('./database')
 // 接收一个sql语句 以及所需的values
 // 这里接收第二参数values的原因是可以使用mysql的占位符 '?'
 // 比如 query(`select * from my_database where id = ?`, [1])
-
+const pools = {}
 let query = function(db, sql, values ) {
   const dbOptionsTemp = JSON.parse(JSON.stringify(dbOptions))
   dbOptionsTemp.database = db
-  const pool = mysql.createPool(dbOptionsTemp)
+  let pool = pools[db]
+  if (!pool) {
+    pool = mysql.createPool(dbOptionsTemp)
+    pools[db] = pool
+  }
   // 返回一个 Promise
   return new Promise(( resolve, reject ) => {
     pool.getConnection(function(err, connection) {
@@ -69,9 +73,9 @@ let generateUpdateClause = function(table, obj, fields) {
   }
   Object.keys(temp).map(item => {
     if (typeof temp[item] === 'string') {
-      clause += `${humps.decamelize(item)}='${temp[item]}', `
+      clause += `${item === 'ISBN' ? item : humps.decamelize(item)}='${temp[item]}', `
     } else {
-      clause += `${humps.decamelize(item)}=${temp[item]}, `
+      clause += `${item === 'ISBN' ? item : humps.decamelize(item)}=${temp[item]}, `
     }
   })
   clause = clause.slice(0, -2)
@@ -85,8 +89,10 @@ let generateUpdateClause = function(table, obj, fields) {
  * @param {array} fields 需要更新的字段，驼峰式，可选
  */
 let generateInsertRows = function(table, rows, fields) {
-  let tempRows = humps.decamelizeKeys(rows)
-  let tempFields = Array.isArray(fields) ? fields.map(item => humps.decamelize(item)) : Object.keys(tempRows[0])
+  let tempRows = humps.decamelizeKeys(rows, (key, convert) => {
+    return key === 'ISBN' ? key : convert(key)
+  })
+  let tempFields = Array.isArray(fields) ? fields.map(item => item === 'ISBN' ? item : humps.decamelize(item)) : Object.keys(tempRows[0])
   // console.log(rows[0])
   let sql = `INSERT INTO ${table} (${tempFields.map(item => `\`${item}\``).join(',')}) VALUES `
   let clause = tempRows.map(row => {

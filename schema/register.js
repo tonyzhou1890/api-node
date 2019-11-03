@@ -6,7 +6,7 @@ const Joi = require('joi')
 const accountListSchema = Joi.object().keys({
   page: Joi.number(),
   rows: Joi.number(),
-  nickname: Joi.string()
+  nickname: Joi.string().allow('')
 })
 
 /**
@@ -90,6 +90,7 @@ const appUpdateSchema = Joi.object().keys({
 
 /**
  * 积分列表校验
+ * filter 1: 全部，2：获取，3：消费
  */
 const scoreListSchema = Joi.object().keys({
   page: Joi.number(),

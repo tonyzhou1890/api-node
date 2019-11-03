@@ -7,6 +7,7 @@ const humps = require('humps')
 const { dbOptions, collection } = require('../utils/database')
 const { query, limit, unique, generateUpdateClause, generateInsertRows, isUpdateSuccess, isInsertSuccess, isDeleteSuccess } = require('../utils/query')
 const { errorMsg, writeFile, deleteFile, strToImageFile, sizeOfBase64, formatTime, replaceValueLabelStr } = require('../utils/utils')
+const { authorToBook, queryBookList } = require('../utils/advancedUtils')
 const { shoppingCartAddSchema, shoppingCartSubtractSchema, shoppingCartSettleSchema } = require('../schema/enjoyReading')
 const { LoginExpireTime, RegisterAccountType, EnjoyReadingRole } = require('../utils/setting')
 const { updateScore } = require('../utils/advancedUtils')
@@ -18,15 +19,24 @@ async function shoppingCartList(req, res, next) {
   let response = {}
   let uuids = req.__enjoyReadingRecord.shoppingCart.split(',').map(item => `'${item}'`).join(',')
   if (uuids) {
-    let sql = `SELECT * FROM er_book WHERE uuid IN (${uuids})`
-    let books = await query(collection, sql)
-    if (Array.isArray(books)) {
-      books = humps.camelizeKeys(books)
-      formatTime(books)
-      response = errorMsg({ code: 0, data: books, total: books.length })
-    } else {
-      response = errorMsg({ code: 2 })
+    let condition = ` WHERE uuid IN (${uuids})`
+    let listSql = `SELECT * FROM er_book${condition}`
+
+    let totalSql = `SELECT COUNT(uuid) FROM er_book${condition}`
+
+    // let books = await query(collection, sql)
+    let response = await queryBookList({ page: 1, rows: 999 }, condition, listSql, totalSql)
+    if (response.code === 0) {
+      formatTime(response.data)
     }
+    return res.send(response);
+    // if (Array.isArray(books)) {
+    //   books = humps.camelizeKeys(books)
+    //   formatTime(books)
+    //   response = errorMsg({ code: 0, data: books, total: books.length })
+    // } else {
+    //   response = errorMsg({ code: 2 })
+    // }
   } else {
     response = errorMsg({ code: 0, data: [], total: 0 })
   }
@@ -44,9 +54,14 @@ async function shoppingCartAdd(req, res, next) {
     response = errorMsg({ code: 24 }, vali.error.details[0].message)
   } else {
     let newShoppingCart = req.__enjoyReadingRecord.shoppingCart
+    // 检查购物车中是否已存在
     if (newShoppingCart) {
       if (newShoppingCart.includes(req.body.uuid)) {
         response = errorMsg({ code: 24 }, '请不要重复添加')
+        return res.send(response)
+      } else if (newShoppingCart.split(',').length >= 50) {
+        // 购物车达到上限
+        response = errorMsg({ code: 24 }, '购物车已达上限')
         return res.send(response)
       } else {
         newShoppingCart += `,${req.body.uuid}`
@@ -109,9 +124,13 @@ async function shoppingCartSettle(req, res, next) {
     // 如果有需要结算的书籍
     if (Array.isArray(books) && books.length) {
       books = humps.camelizeKeys(books)
+      // 如果不是立即购买
       // 去除购物车中不存在的书籍
-      let shoppingCart = req.__enjoyReadingRecord.shoppingCart.split(',')
-      books = books.filter(item => shoppingCart.includes(item.uuid))
+      if (!req.body.buy) {
+        let shoppingCart = req.__enjoyReadingRecord.shoppingCart.split(',')
+        books = books.filter(item => shoppingCart.includes(item.uuid))
+      }
+      
       if (!books.length) {
         response = errorMsg({ code: 24 }, '没有需要结算的书籍')
       } else {
@@ -144,7 +163,6 @@ async function shoppingCartSettle(req, res, next) {
           if (response.code === 0 || totalScore === 0) {
             // 初始信息
             let initAccountBookObj = {
-              uuid: uuidv1(),
               accountUuid: req.__record.uuid,
               percent: 0,
               point: 0,
@@ -155,7 +173,7 @@ async function shoppingCartSettle(req, res, next) {
             }
             let bookRows = []
             books.map(book => {
-              bookRows.push(Object.assign({}, initAccountBookObj, { bookUuid: book.uuid }))
+              bookRows.push(Object.assign({}, initAccountBookObj, { bookUuid: book.uuid, uuid: uuidv1() }))
             })
             let insertRowsSql = generateInsertRows('er_account_book_info', bookRows)
             let insertRowsResult = await query(collection, insertRowsSql)

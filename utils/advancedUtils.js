@@ -119,7 +119,9 @@ async function queryBookList(params, condition, listSql, totalSql) {
   const countResult = await query(collection, countSql)
   // 如果一切顺利，进入下一步
   if (Array.isArray(result) && Array.isArray(countResult) && countResult.length) {
-    let data = humps.camelizeKeys(result)
+    let data = humps.camelizeKeys(result, (key, convert) => {
+      return key === 'ISBN' ? key : convert(key)
+    })
     // 查询作者
     if (data.length) {
       data = await authorToBook(data)

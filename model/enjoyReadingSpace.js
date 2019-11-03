@@ -267,7 +267,7 @@ async function dealBookContent(temp, oldBook, ERRecord) {
   // 计算 bookSize
   if (temp.uuid) {
     temp.frontCoverSize = temp.frontCoverPath === oldBook.frontCoverPath ? oldBook.frontCoverSize : temp.frontCoverSize
-    temp.backCoverSize = temp.backCoverPath === oldBook.backCoverPath ? oldBook.backCoverPath : temp.backCoverPath
+    temp.backCoverSize = temp.backCoverPath === oldBook.backCoverPath ? oldBook.backCoverSize : temp.backCoverSize
     temp.textSize = oldBook.textSize
   }
   temp.bookSize = temp.textSize + temp.frontCoverSize + temp.backCoverSize
@@ -275,7 +275,6 @@ async function dealBookContent(temp, oldBook, ERRecord) {
   // 计算使用空间大小增量
   temp.incrementSize = temp.uuid ? temp.bookSize - oldBook.bookSize : temp.bookSize
   temp.incrementSize = Number((temp.incrementSize / 1024).toFixed(3))
-
   // 检查空间大小是否足够
   if (temp.incrementSize > (ERRecord.totalSpace - ERRecord.privateSpace - ERRecord.storeSpace)) {
     return errorMsg({ code: 24 }, '空间不足')
@@ -287,7 +286,7 @@ async function dealBookContent(temp, oldBook, ERRecord) {
  */
 async function dealBookInsert(req, res, next, temp) {
   dealDefault(req, temp)
-  let fields = ['uuid', 'uploadAccountUuid', 'name', 'type', 'parentSeries', 'position', 'author', 'frontCoverPath', 'backCoverPath', 'frontCoverSize', 'backCoverSize', 'textPath', 'textSize', 'bookSize', 'length', 'summary', 'free', 'score', 'discount', 'discountScore', 'status', 'tag', 'sequence', 'createTime']
+  let fields = ['uuid', 'uploadAccountUuid', 'name', 'type', 'ISBN', 'parentSeries', 'position', 'author', 'frontCoverPath', 'backCoverPath', 'frontCoverSize', 'backCoverSize', 'textPath', 'textSize', 'bookSize', 'length', 'summary', 'free', 'score', 'discount', 'discountScore', 'status', 'tag', 'sequence', 'createTime']
 
   let insertBookSql = generateInsertRows('er_book', [temp], fields)
   let insertBookResult = await query(collection, insertBookSql)
@@ -345,7 +344,7 @@ async function dealBookInsert(req, res, next, temp) {
  */
 async function dealBookUpdate(req, res, next, temp, oldBook) {
   dealDefault(req, temp)
-  let fields = ['name', 'type', 'position', 'author', 'frontCoverPath', 'backCoverPath', 'frontCoverSize', 'backCoverSize', 'bookSize', 'summary', 'free', 'score', 'discount', 'discountScore', 'status', 'tag']
+  let fields = ['name', 'type', 'ISBN', 'position', 'author', 'frontCoverPath', 'backCoverPath', 'frontCoverSize', 'backCoverSize', 'bookSize', 'summary', 'free', 'score', 'discount', 'discountScore', 'status', 'tag']
 
   let updateBookSql = generateUpdateClause('er_book', temp, fields) + ` WHERE uuid = '${temp.uuid}'`
   let updateBookResult = await query(collection, updateBookSql)
@@ -359,8 +358,8 @@ async function dealBookUpdate(req, res, next, temp, oldBook) {
         accountObj.storeSpace = (temp.incrementSize || 0) + req.__enjoyReadingRecord.storeSpace
       }
       
-      let accountSql = generateUpdateClause('er_account', accountObj) + ` WHERE uuid = '${req.__enjoyReadingRecord.uuid}'`
-      let accountResult = await query(accountSql)
+      let accountSql = generateUpdateClause('er_accounts', accountObj) + ` WHERE uuid = '${req.__enjoyReadingRecord.uuid}'`
+      let accountResult = await query(collection, accountSql)
       if (!isUpdateSuccess(accountResult)) {
         return errorMsg({code: 4})
       }
@@ -443,7 +442,7 @@ async function spaceBookDelete(req, res, next) {
               }
               // 删除封底文件
               if (bookRecord.backCoverPath && bookRecord.backCoverPath.includes('enjoy_reading')) {
-                let deleteBackCoverPath = await deleteFile('../store' + bookRecord.backCoverPath)
+                let deleteBackCoverResult = await deleteFile('../store' + bookRecord.backCoverPath)
                 if (!deleteBackCoverResult.status) {
                   response = errorMsg({ code: 24 }, '删除封底失败')
                   return res.send(response)

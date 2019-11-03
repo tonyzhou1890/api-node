@@ -157,7 +157,7 @@ async function searchBookList(req, res, next) {
     const params = {
       page: req.body.rows && req.body.page || 1,
       rows: req.body.page && req.body.rows || limit,
-      keyword: req.body.keyword
+      keyword: req.body.keyword === '*' ? '' : req.body.keyword
     }
 
     // 从属系列为空，则代表是单本/系列名
@@ -209,7 +209,8 @@ async function storeBookList(req, res, next) {
 
     condition += ` AND er_book.uuid = er_account_book_info.book_uuid AND er_account_book_info.account_uuid = '${req.__record.uuid}' ORDER BY er_account_book_info.create_time DESC`
 
-    let listSql = `SELECT ${['uuid', 'name', 'type', 'author', 'front_cover_path', 'free', 'score', 'discount', 'discount_score'].map(item => 'er_book.' + item).join(',')}, er_account_book_info.create_time 
+    let listSql = `SELECT ${['name', 'type', 'position', 'author', 'front_cover_path', 'free', 'score', 'discount', 'discount_score'].map(item => 'er_book.' + item).join(',')}, 
+    ${['uuid', 'book_uuid', 'on_shelf', 'create_time'].map(item => 'er_account_book_info.' + item).join(',')} 
       FROM 
       er_book, er_account_book_info${condition} LIMIT ${start}, ${params.rows}`
 
@@ -233,13 +234,13 @@ async function shelfBookList(req, res, next) {
   //  在书架上
   let condition = ` WHERE (er_book.type = 1 OR er_book.parent_series != '') AND er_book.uuid = er_account_book_info.book_uuid AND er_account_book_info.account_uuid = '${req.__record.uuid}' AND er_account_book_info.on_shelf = 1 ORDER BY er_account_book_info.update_time DESC`
 
-  let listSql = `SELECT ${['uuid', 'name', 'type', 'author', 'front_cover_path', 'length', 'free', 'score', 'discount', 'discount_score'].map(item => 'er_book.' + item).join(',')}, ${['create_time', 'update_time', 'percent', 'point', 'reading_status'].map(item => 'er_account_book_info.' + item).join(',')} 
+  let listSql = `SELECT ${['name', 'type', 'author', 'front_cover_path', 'length', 'free', 'score', 'discount', 'discount_score'].map(item => 'er_book.' + item).join(',')}, ${['uuid', 'book_uuid', 'create_time', 'update_time', 'percent', 'point', 'reading_status'].map(item => 'er_account_book_info.' + item).join(',')} 
     FROM 
     er_book, er_account_book_info${condition}`
 
   let totalSql = `SELECT COUNT(er_book.uuid) FROM er_book, er_account_book_info${condition}`
 
-  response = await queryBookList({ page: 1, rows: 10 }, condition, listSql, totalSql)
+  response = await queryBookList({ page: 1, rows: 999 }, condition, listSql, totalSql)
 
   // 格式化时间
   if (response.code === 0) {

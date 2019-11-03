@@ -2,7 +2,7 @@ const express = require('express')
 const router = express.Router()
 
 const { homeBannerList } = require('../model/enjoyReadingBanner')
-const { tagList, accountDetail, accountLoginScore } = require('../model/enjoyReadingCommon')
+const { tagList, authorList, accountDetail, accountLoginScore } = require('../model/enjoyReadingCommon')
 const { latestList, discountList, freeList, tagBookList, searchBookList, storeBookList, shelfBookList } = require('../model/enjoyReadingBookList')
 const { bookDetail, bookRecommend, readingInfoUpdate } = require('../model/enjoyReadingBook')
 const { spaceBookList, spaceBookCreateOrUpdate, spaceBookDelete } = require('../model/enjoyReadingSpace')
@@ -17,6 +17,11 @@ router.post('/banner/homeList', homeBannerList)
  * 标签列表
  */
 router.post('/tag/list', tagList)
+
+/**
+ * 作者列表
+ */
+router.post('/author/list', authorList)
 
 /**
  * 最新上架列表
