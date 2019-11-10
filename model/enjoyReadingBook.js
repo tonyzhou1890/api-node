@@ -8,7 +8,7 @@ const { dbOptions, collection } = require('../utils/database')
 const { query, limit, unique, generateUpdateClause, isUpdateSuccess, isInsertSuccess } = require('../utils/query')
 const { errorMsg, strToImageFile, sizeOfBase64, formatTime } = require('../utils/utils')
 const { authorToBook, tagToBook, queryBookList } = require('../utils/advancedUtils')
-const { bookDetailSchema, bookRecommendSchema, readingInfoUpdateSchema } = require('../schema/enjoyReading')
+const { bookDetailSchema, bookRecommendSchema, readingInfoUpdateSchema, readingInfoSchema } = require('../schema/enjoyReading')
 const { LoginExpireTime, RegisterAccountType, EnjoyReadingRole } = require('../utils/setting')
 
 /**
@@ -161,8 +161,41 @@ async function readingInfoUpdate(req, res, next) {
   return res.send(response)
 }
 
+/**
+ * 获取 er_account_book_info 信息
+ */
+async function readingInfo(req, res, next) {
+  let response = {}
+  const vali = Joi.validate(req.body, readingInfoSchema, { allowUnknown: true })
+  if (vali.error) {
+    response = errorMsg({ code: 24 }, vali.error.details[0].message)
+  } else {
+    const sql = `SELECT ${['uuid', 'percent', 'update_time'].map(item => 'er_account_book_info.' + item).join(',')}, ${['name', 'front_cover_path', 'back_cover_path', 'text_path'].map(item => 'er_book.' + item).join(',')}
+    FROM er_account_book_info, er_book
+    WHERE er_account_book_info.uuid = '${req.body.uuid}'
+    AND er_account_book_info.book_uuid = er_book.uuid`
+    let result = await query(collection, sql)
+    // 查询成功并且有记录
+    if (Array.isArray(result) && result.length) {
+      response = errorMsg({ code: 0 })
+      books = humps.camelizeKeys(result)
+      formatTime(books, '', 'updateTime')
+      response.data = books[0]
+    } else {
+      // 查询成功，没有记录
+      if (Array.isArray(result)) {
+        response = errorMsg({ code: 40 })
+      } else {
+        response = errorMsg({ code: 2 })
+      }
+    }
+  }
+  return res.send(response)
+}
+
 module.exports = {
   bookDetail,
   bookRecommend,
-  readingInfoUpdate
+  readingInfoUpdate,
+  readingInfo
 }

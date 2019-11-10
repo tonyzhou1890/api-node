@@ -83,6 +83,13 @@ const readingInfoUpdateSchema = Joi.object().keys({
 })
 
 /**
+ * 书籍阅读信息
+ */
+const readingInfoSchema = Joi.object().keys({
+  uuid: Joi.string().required()
+})
+
+/**
  * 空间管理书籍列表
  */
 const spaceBookListSchema = Joi.object().keys({
@@ -187,6 +194,7 @@ module.exports = {
   bookDetailSchema,
   bookRecommendSchema,
   readingInfoUpdateSchema,
+  readingInfoSchema,
   spaceBookListSchema,
   spaceBookCreateSchema,
   spaceBookUpdateSchema,
