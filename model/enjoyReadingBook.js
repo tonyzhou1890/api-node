@@ -5,7 +5,7 @@ const moment = require('moment')
 const humps = require('humps')
 
 const { dbOptions, collection } = require('../utils/database')
-const { query, limit, unique, generateUpdateClause, isUpdateSuccess, isInsertSuccess } = require('../utils/query')
+const { query, limit, unique, generateUpdateClause, isUpdateSuccess, generateInsertRows, isInsertSuccess } = require('../utils/query')
 const { errorMsg, strToImageFile, sizeOfBase64, formatTime } = require('../utils/utils')
 const { authorToBook, tagToBook, queryBookList } = require('../utils/advancedUtils')
 const { bookDetailSchema, bookRecommendSchema, readingInfoUpdateSchema, readingInfoSchema } = require('../schema/enjoyReading')
@@ -170,11 +170,59 @@ async function readingInfo(req, res, next) {
   if (vali.error) {
     response = errorMsg({ code: 24 }, vali.error.details[0].message)
   } else {
-    const sql = `SELECT ${['uuid', 'percent', 'update_time'].map(item => 'er_account_book_info.' + item).join(',')}, ${['name', 'front_cover_path', 'back_cover_path', 'text_path'].map(item => 'er_book.' + item).join(',')}
+    let readingInfoUuid = req.body.uuid
+    // 如果传的uuid是书籍的，检查阅读信息表里是否已经有记录，如果没有，获取书籍信息，如果书籍是免费的，则默认添加到当前账户书架
+    if (req.body.type === 'book') {
+      let isUnique = await unique(collection, 'er_account_book_info', 'book_uuid', readingInfoUuid)
+      if (!isUnique.length) {
+        const bookSql = `SELECT free FROM er_book WHERE uuid = '${readingInfoUuid}'`
+        const bookResult = await query(collection, bookSql)
+        if (Array.isArray(bookResult) && bookResult.length) {
+          if (bookResult[0].free === 1) {
+            // 初始信息
+            let initAccountBookObj = {
+              uuid: uuidv1(),
+              bookUuid: readingInfoUuid,
+              accountUuid: req.__record.uuid,
+              percent: 0,
+              point: 0,
+              readingStatus: 0,
+              onShelf: 1,
+              updateTime: moment().format('YYYY-MM-DD HH:mm:ss'),
+              createTime: moment().format('YYYY-MM-DD HH:mm:ss')
+            }
+            let bookRows = [initAccountBookObj]
+            let insertRowsSql = generateInsertRows('er_account_book_info', bookRows)
+            let insertRowsResult = await query(collection, insertRowsSql)
+            if (isInsertSuccess(insertRowsResult)) {
+              readingInfoUuid = initAccountBookObj.uuid
+            } else {
+              response = errorMsg({ code: 3 })
+            }
+          } else {
+            response = errorMsg({ code: 24 }, '此书非免费')
+          }
+          
+        } else {
+          if (Array.isArray(bookResult)) {
+            response = errorMsg({ code: 40 })
+          } else {
+            response = errorMsg({ code: 2 })
+          }
+        }
+      } else {
+        readingInfoUuid = isUnique[0].uuid
+      }
+    }
+    if (response.code) {
+      return res.send(response)
+    }
+    // 查询记录
+    const readingInfoSql = `SELECT ${['uuid', 'percent', 'update_time'].map(item => 'er_account_book_info.' + item).join(',')}, ${['name', 'front_cover_path', 'back_cover_path', 'text_path'].map(item => 'er_book.' + item).join(',')}
     FROM er_account_book_info, er_book
-    WHERE er_account_book_info.uuid = '${req.body.uuid}'
+    WHERE er_account_book_info.uuid = '${readingInfoUuid}'
     AND er_account_book_info.book_uuid = er_book.uuid`
-    let result = await query(collection, sql)
+    let result = await query(collection, readingInfoSql)
     // 查询成功并且有记录
     if (Array.isArray(result) && result.length) {
       response = errorMsg({ code: 0 })
