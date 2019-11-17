@@ -145,7 +145,7 @@ const valiEnjoyReading = async (req, res, next) => {
   // 检查账户有没有订阅享阅应用，如果没有订阅，__record 改为 null，__enjoyReadingRecord 也要改成 null
   // 改成 null 后，需要权限的接口会拦截请求，灰名单接口会将请求当成一般请求处理
   if (req.__record !== null && req.__record !== 'invalid') {
-    let appSql = `SELECT * FROM apps WHERE related_domain LIKE '%${req.hostname}%'`
+    let appSql = `SELECT * FROM apps WHERE related_domain LIKE '%enjoy-reading%'`
     let appResult = await query(collection, appSql)
     if (!(Array.isArray(appResult) && appResult[0] && req.__record.apps.includes(appResult[0].uuid))) {
       req.__record = null
