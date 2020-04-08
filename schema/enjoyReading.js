@@ -146,9 +146,16 @@ const spaceBookUpdateSchema = Joi.object().keys({
 })
 
 /**
- * 空间管理书记删除/禁用
+ * 空间管理书籍删除/禁用
  */
 const spaceBookDeleteSchema = Joi.object().keys({
+  uuid: Joi.string().max(40).required()
+})
+
+/**
+ * 空间管理书籍启用
+ */
+const spaceBookUseSchema = Joi.object().keys({
   uuid: Joi.string().max(40).required()
 })
 
@@ -199,6 +206,7 @@ module.exports = {
   spaceBookCreateSchema,
   spaceBookUpdateSchema,
   spaceBookDeleteSchema,
+  spaceBookUseSchema,
   shoppingCartAddSchema,
   shoppingCartSubtractSchema,
   shoppingCartSettleSchema,

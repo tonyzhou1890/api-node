@@ -12,3 +12,7 @@ pm2 list
 // 停止所有
 pm2 stop all
 ```
+
+## 版本说明
+### v0.1.2--2020.04.08
+1. 新增启用书籍`/enjoyReading/space/book/use`接口

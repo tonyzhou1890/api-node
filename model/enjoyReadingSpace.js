@@ -8,7 +8,7 @@ const { dbOptions, collection } = require('../utils/database')
 const { query, limit, unique, generateUpdateClause, generateInsertRows, isUpdateSuccess, isInsertSuccess, isDeleteSuccess } = require('../utils/query')
 const { errorMsg, writeFile, deleteFile, strToImageFile, sizeOfBase64, formatTime, replaceValueLabelStr } = require('../utils/utils')
 const { tagToBook, authorToBook, queryBookList, getAuthorsOrTags, updateScore } = require('../utils/advancedUtils')
-const { spaceBookListSchema, spaceBookCreateSchema, spaceBookUpdateSchema, spaceBookDeleteSchema } = require('../schema/enjoyReading')
+const { spaceBookListSchema, spaceBookCreateSchema, spaceBookUpdateSchema, spaceBookDeleteSchema, spaceBookUseSchema } = require('../schema/enjoyReading')
 const { LoginExpireTime, RegisterAccountType, EnjoyReadingRole } = require('../utils/setting')
 
 /**
@@ -476,8 +476,28 @@ async function spaceBookDelete(req, res, next) {
   return res.send(response)
 }
 
+/**
+ * 启用书籍
+ */
+async function spaceBookUse(req, res, next) {
+  let response = {}
+  const vali = Joi.validate(req.body, spaceBookUseSchema, {allowUnknown: true})
+  if (vali.error) {
+    response = errorMsg({ code: 24 }, vali.error.details[0].message)
+  } else {
+    let updateSql = generateUpdateClause('er_book', { status: 0 }) + ` WHERE uuid = '${req.body.uuid}'`
+    if (isUpdateSuccess(await query(collection, updateSql))) {
+      response = errorMsg({ code: 0 })
+    } else {
+      response = errorMsg({ code: 4 })
+    }
+  }
+  return res.send(response)
+}
+
 module.exports = {
   spaceBookList,
   spaceBookCreateOrUpdate,
-  spaceBookDelete
+  spaceBookDelete,
+  spaceBookUse
 }
