@@ -1,3 +1,6 @@
+// 本地服务地址
+const localhost = 'http://localhost:3000'
+
 // 登录有效时间
 const LoginExpireTime = 3 * 3600 * 1000
 
@@ -101,6 +104,7 @@ const EnjoyReadingPermission = [
 ]
 
 module.exports = {
+  localhost,
   LoginExpireTime,
   RegisterAccountType,
   TypePermission: TypePermission.concat(EnjoyReadingPermission),

@@ -5,16 +5,19 @@ const { query, unique } = require('../utils/query')
 const { errorMsg, formatTime } = require('../utils/utils')
 const { TypePermission, EnjoyReadingPermission } = require('../utils/setting')
 const { enjoyReadingGraylist } = require('./graylist')
-const { enjoyReadingWhitelist } = require('./whitelist')
+const { enjoyReadingWhitelist, poemWhitelist } = require('./whitelist')
 const humps = require('humps')
 
 /**
  * token验证白名单
  */
 const whitelist = [
+  '/',
   '/register/account/register',
   '/register/account/login',
-  ...enjoyReadingWhitelist
+  ...enjoyReadingWhitelist,
+  '/poem',
+  ...poemWhitelist
 ]
 
 /**

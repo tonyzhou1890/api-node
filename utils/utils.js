@@ -1,5 +1,6 @@
 const fs = require('fs')
 const moment = require('moment')
+const { query } = require('./query')
 
 /**
  * 插入错误信息
@@ -229,6 +230,23 @@ const replaceValueLabelStr = (str, arr, joinChar) => {
   return strs.join(joinChar)
 }
 
+/**
+ * 获取总数
+ * @param {string} database 数据库名称
+ * @param {string} table 表名称
+ * @param {string} field 字段名称
+ * @param {string} condition 查询条件--可选
+ */
+const count = async (database, table, field, condition = '') => {
+  const sql = `SELECT COUNT('${field}') FROM ${table}${condition}`
+  const result = await query(database, sql)
+  if (Array.isArray(result) && result.length) {
+    return Object.values(result[0])[0]
+  } else {
+    return false
+  }
+}
+
 module.exports = {
   errorMsg,
   writeFile,
@@ -237,5 +255,6 @@ module.exports = {
   strToImageFile,
   sizeOfBase64,
   formatTime,
-  replaceValueLabelStr
+  replaceValueLabelStr,
+  count
 }
