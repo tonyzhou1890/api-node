@@ -20,7 +20,7 @@ enjoyReadingWhitelist.map((item, index) => {
 })
 
 // 诗词路由前缀
-const poemPredix = '/poem'
+const poemPrefix = '/poem'
 
 // 诗词白名单路由
 const poemWhitelist = [
@@ -34,7 +34,7 @@ const poemWhitelist = [
 
 // 将前缀添上
 poemWhitelist.map((item, index) => {
-  poemWhitelist[index] = poemPredix + item
+  poemWhitelist[index] = poemPrefix + item
 })
 
 module.exports = {

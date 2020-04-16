@@ -32,9 +32,9 @@ app.use(express.urlencoded({ limit: '50mb', extended: false }));
 app.use(cookieParser());
 
 // 验证token
-app.use('*', valiToken)
+app.use('/', valiToken)
 // 验证基本权限
-app.use('*', valiPermission)
+app.use('/', valiPermission)
 // 验证享阅权限
 app.use('/enjoyReading', valiEnjoyReading)
 
