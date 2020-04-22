@@ -1,7 +1,7 @@
 const express = require('express')
 const router = express.Router()
 
-const { home, getById, authorList, poemList, getPoemsByAuthor, search } = require('../model/poem')
+const { home, getById, authorList, poemList, getPoemsByAuthor, search, poemListRandom, tagsByType, poemListByTag } = require('../model/poem')
 
 /* GET home page. */
 router.get('/', function(req, res, next) {
@@ -37,5 +37,20 @@ router.get('/getPoemsByAuthor', getPoemsByAuthor)
  * 搜索
  */
 router.get('/search', search)
+
+/**
+ * 获取指定数量的随机诗词列表
+ */
+router.get('/poemListRandom', poemListRandom)
+
+/**
+ * 获取标签
+ */
+router.get('/tagsByType', tagsByType)
+
+/**
+ * 根据标签获取诗词
+ */
+router.get('/poemListByTag', poemListByTag)
 
 module.exports = router;

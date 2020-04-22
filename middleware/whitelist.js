@@ -29,7 +29,10 @@ const poemWhitelist = [
   '/authorList',
   '/poemList',
   '/getPoemsByAuthor',
-  '/search'
+  '/search',
+  '/poemListRandom',
+  '/tagsByType',
+  '/poemListByTag'
 ]
 
 // 将前缀添上

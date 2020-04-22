@@ -247,6 +247,22 @@ const count = async (database, table, field, condition = '') => {
   }
 }
 
+/**
+ * 计算指定数量不重复随机正整数
+ * @param {number} min 最小值
+ * @param {number} max 最大值
+ * @param {number} limit 数量
+ */
+const randomPositiveIntegerLimit = (min, max, limit) => {
+  if (max - min + 1 < limit) return false
+  const obj = {}
+  while (Object.keys(obj).length < limit) {
+    const key = Math.round(Math.random() * (max - min)) + min
+    obj[key] = true
+  }
+  return Object.keys(obj)
+}
+
 module.exports = {
   errorMsg,
   writeFile,
@@ -256,5 +272,6 @@ module.exports = {
   sizeOfBase64,
   formatTime,
   replaceValueLabelStr,
-  count
+  count,
+  randomPositiveIntegerLimit
 }

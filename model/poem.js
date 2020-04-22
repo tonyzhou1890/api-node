@@ -8,8 +8,8 @@ const axios = require('axios')
 const { localhost } = require('../utils/setting')
 const { dbOptions, poem } = require('../utils/database')
 const { query, limit } = require('../utils/query')
-const { errorMsg, count } = require('../utils/utils')
-const { getByIdSchema, authorListSchema, poemListSchema, getPoemsByAuthorSchema, searchSchema } = require('../schema/poem')
+const { errorMsg, count, randomPositiveIntegerLimit } = require('../utils/utils')
+const { getByIdSchema, authorListSchema, poemListSchema, getPoemsByAuthorSchema, searchSchema, poemListRandomSchema, tagsByTypeSchema, poemListByTagSchema } = require('../schema/poem')
 
 const poemsLimit = 20
 const authorsLimit = 200
@@ -46,7 +46,7 @@ async function getById(req, res, next) {
   if (vali.error) {
     response = errorMsg({ code: 24 }, vali.error.details[0].message)
   } else {
-    const sql = `SELECT _id, mingcheng, zuozhe, yuanwen FROM poem WHERE _id = ${req.query.id}`
+    const sql = `SELECT _id, mingcheng, zuozhe, chaodai, yuanwen FROM poem WHERE _id = ${req.query.id}`
     const result = await query(poem, sql)
     if (Array.isArray(result)) {
       if (result.length) {
@@ -109,7 +109,7 @@ async function poemList(req, res, next) {
     }
     const start = (params.page - 1) * params.rows
     const condition = params.author ? ` WHERE zuozhe = '${params.author}'` : ''
-    const sql = `SELECT _id, mingcheng, zuozhe, zhaiyao FROM poem${condition} ORDER BY _id LIMIT ${start}, ${params.rows}`
+    const sql = `SELECT _id, mingcheng, zuozhe, chaodai, zhaiyao FROM poem${condition} ORDER BY _id LIMIT ${start}, ${params.rows}`
     const result = await query(poem, sql)
     const total = await count(poem, 'poem', '_id', condition)
     if (Array.isArray(result) && total !== false) {
@@ -148,7 +148,7 @@ async function getPoemsByAuthor(req, res, next) {
         const authorSql = `SELECT * FROM author WHERE xingming = '${params.author}'`
         const result = await query(poem, authorSql)
         if (Array.isArray(result) && result.length) {
-          response = res.data || {}
+          response = res.data || errorMsg({ code: 0 })
           response.data.authorInfo = result[0]
         }
       } else {
@@ -204,7 +204,7 @@ async function search(req, res, next) {
 async function searchInField(params) {
   const s = Date.now()
   let response = {}
-  const sql = `SELECT _id, mingcheng, zuozhe, zhaiyao FROM poem WHERE ${params.field} LIKE '%${params.keyword}%' LIMIT ${params.start}, ${params.rows}`
+  const sql = `SELECT _id, mingcheng, zuozhe, chaodai, zhaiyao FROM poem WHERE ${params.field} LIKE '%${params.keyword}%' LIMIT ${params.start}, ${params.rows}`
   const result = await query(poem, sql)
   const condition = ` WHERE ${params.field} LIKE '%${params.keyword}%'`
   const total = await count(poem, 'poem', '_id', condition)
@@ -218,11 +218,117 @@ async function searchInField(params) {
   return response
 }
 
+/**
+ * 获取指定数量的随机诗词列表
+ */
+async function poemListRandom(req, res, next) {
+  let response = {}
+  const vali = Joi.validate(req.query, poemListRandomSchema, {allowUnknown: true})
+  if (vali.error) {
+    response = errorMsg({ code: 24 }, vali.error.details[0].message)
+  } else {
+    // 确定参数
+    const params = {
+      limit: req.query.limit ? (req.query.limit > 30 ? 30 : req.query.limit) : 20
+    }
+    // 查询总数
+    const total = await count(poem, 'poem', '_id')
+    // 查询的 id 集合
+    const ids = total && total > limit ? randomPositiveIntegerLimit(1, total, params.limit) : false
+    if (ids) {
+      // 查询诗词语句
+      const sql = `SELECT _id, mingcheng, zuozhe, chaodai, zhaiyao FROM poem WHERE _id in (${ids.join()})`
+      const result = await query(poem, sql)
+      if (Array.isArray(result)) {
+        response = errorMsg({ code: 0 })
+        response.data = result
+      } else {
+        response = errorMsg({ code: 2 })
+      }
+    } else {
+      response = errorMsg({ code: 24 }, '后台错误')
+    }
+  }
+  return res.send(response)
+}
+
+/**
+ * 获取标签
+ */
+async function tagsByType(req, res, next) {
+  let response = {}
+  const vali = Joi.validate(req.query, tagsByTypeSchema, {allowUnknown: true})
+  if (vali.error) {
+    response = errorMsg({ code: 24 }, vali.error.details[0].message)
+  } else {
+    // 确定参数
+    const params = {
+      type: ['fenlei', 'chaodai', 'congshu'].includes(req.query.type) ? req.query.type : ''
+    }
+    // 参数有效才查询
+    if (params.type) {
+      const sql = `SELECT * FROM ${params.type}`
+      const result = await query(poem, sql)
+      if (Array.isArray(result)) {
+        response = errorMsg({ code: 0 })
+        response.data = result
+      } else {
+        response = errorMsg({ code: 2 })
+      }
+    } else {
+      response = errorMsg({ code: 24 }, '参数 type 只能是 fenlei/chaodai/congshu 中的一个')
+    }
+  }
+  return res.send(response)
+}
+
+/**
+ * 获取标签
+ */
+async function poemListByTag(req, res, next) {
+  let response = {}
+  const vali = Joi.validate(req.query, poemListByTagSchema, {allowUnknown: true})
+  if (vali.error) {
+    response = errorMsg({ code: 24 }, vali.error.details[0].message)
+  } else {
+    // 确定参数
+    const params = {
+      field: ['fenlei', 'chaodai', 'congshu'].includes(req.query.field) ? req.query.field : '',
+      tag: req.query.tag,
+      page: req.query.page || 1,
+      rows: req.query.rows || poemsLimit
+    }
+    const start = (params.page - 1) * params.rows
+    // 参数有效才查询
+    if (params.field) {
+      const str = params.field === 'chaodai' ? params.tag : `#${params.tag}#`
+      const sql = `SELECT _id, mingcheng, zuozhe, chaodai, zhaiyao FROM poem WHERE ${params.field} LIKE '%${str}%' LIMIT ${start}, ${params.rows}`
+      const result = await query(poem, sql)
+      const condition = ` WHERE ${params.field} LIKE '%${str}%'`
+      const total = await count(poem, 'poem', '_id', condition)
+      if (Array.isArray(result) && total !== false) {
+        response = errorMsg({ code: 0 })
+        response.data = result
+        response.total = total
+        response.limit = params.rows
+      } else {
+        response = errorMsg({ code: 2 })
+      }
+    } else {
+      response = errorMsg({ code: 24 }, '参数 field 只能是 fenlei/chaodai/congshu 中的一个')
+    }
+  }
+  return res.send(response)
+}
+
 module.exports = {
   home,
   getById,
   authorList,
   poemList,
   getPoemsByAuthor,
-  search
+  search,
+  poemListRandom,
+  tagsByType,
+  poemListByTag
 }

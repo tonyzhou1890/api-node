@@ -43,10 +43,37 @@ const searchSchema = Joi.object().keys({
   keyword: Joi.string().required()
 })
 
+/**
+ * 获取指定数量的随机诗词列表
+ */
+const poemListRandomSchema = Joi.object().keys({
+  limit: Joi.number().integer().positive()
+})
+
+/**
+ * 获取标签
+ */
+const tagsByTypeSchema = Joi.object().keys({
+  type: Joi.string().required()
+})
+
+/**
+ * 根据标签获取诗词
+ */
+const poemListByTagSchema = Joi.object().keys({
+  field: Joi.string().required(),
+  tag: Joi.string().required(),
+  page: Joi.number().integer(),
+  rows: Joi.number().integer()
+})
+
 module.exports = {
   getByIdSchema,
   authorListSchema,
   poemListSchema,
   getPoemsByAuthorSchema,
-  searchSchema
+  searchSchema,
+  poemListRandomSchema,
+  tagsByTypeSchema,
+  poemListByTagSchema
 }
