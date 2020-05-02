@@ -76,7 +76,7 @@ async function authorList(req, res, next) {
       rows: req.query.rows || authorsLimit
     }
     const start = (params.page - 1) * params.rows
-    const sql = `SELECT xingming FROM author ORDER BY _id LIMIT ${start}, ${params.rows}`
+    const sql = `SELECT xingming, xingpy FROM author ORDER BY _id LIMIT ${start}, ${params.rows}`
     const result = await query(poem, sql)
     const total = await count(poem, 'author', '_id')
     if (Array.isArray(result) && total !== false) {
