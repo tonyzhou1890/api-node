@@ -46,7 +46,7 @@ async function getById(req, res, next) {
   if (vali.error) {
     response = errorMsg({ code: 24 }, vali.error.details[0].message)
   } else {
-    const sql = `SELECT _id, mingcheng, zuozhe, chaodai, yuanwen FROM poem WHERE _id = ${req.query.id}`
+    const sql = `SELECT _id, mingcheng, zuozhe, chaodai, zhaiyao, yuanwen FROM poem WHERE _id = ${req.query.id}`
     const result = await query(poem, sql)
     if (Array.isArray(result)) {
       if (result.length) {
