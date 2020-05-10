@@ -263,6 +263,30 @@ const randomPositiveIntegerLimit = (min, max, limit) => {
   return Object.keys(obj)
 }
 
+/**
+ * 获取全部路由--在 app.js 中使用
+ */
+const listRoutes = (routes = [], stack, parent) => {
+
+  parent = parent || '';
+  stack.forEach(function(r){
+    if (r.route && r.route.path){
+      var method = '';
+
+      for(method in r.route.methods){
+        if(r.route.methods[method]){
+          routes.push({method: method.toUpperCase(), path: parent + r.route.path});
+        }
+      }       
+
+    } else if (r.handle && r.handle.name == 'router') {
+      const routerName = r.regexp.source.replace("^\\","").replace("\\/?(?=\\/|$)","");
+      return listRoutes(routes, r.handle.stack, parent + routerName);
+    }
+  });
+  return routes;
+}
+
 module.exports = {
   errorMsg,
   writeFile,
@@ -273,5 +297,6 @@ module.exports = {
   formatTime,
   replaceValueLabelStr,
   count,
-  randomPositiveIntegerLimit
+  randomPositiveIntegerLimit,
+  listRoutes
 }

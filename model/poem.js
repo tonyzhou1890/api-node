@@ -147,7 +147,7 @@ async function getPoemsByAuthor(req, res, next) {
       if (res && res.data && res.data.code === 0) {
         const authorSql = `SELECT * FROM author WHERE xingming = '${params.author}'`
         const result = await query(poem, authorSql)
-        if (Array.isArray(result) && result.length) {
+        if (Array.isArray(result)) {
           response = res.data || errorMsg({ code: 0 })
           response.data.authorInfo = result[0]
         }

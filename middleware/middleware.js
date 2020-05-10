@@ -1,4 +1,5 @@
 const express = require('express')
+const createError = require('http-errors')
 const url = require('url')
 const { collection } = require('../utils/database')
 const { query, unique } = require('../utils/query')
@@ -30,6 +31,10 @@ const graylist = [...enjoyReadingGraylist]
  */
 const valiToken = async (req, res, next) => {
   req.__transUrl = url.parse(req.url, true)
+  // 检查路径是否存在
+  if (global.routes.find(item => item.method === req.method && item.path === req.__transUrl.pathname) === undefined) {
+    return next(createError(404))
+  }
   // 如果在白名单内，直接next
   if (whitelist.includes(req.__transUrl.pathname)) {
     return next()

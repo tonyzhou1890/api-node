@@ -3,6 +3,7 @@ var express = require('express');
 var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
+const { listRoutes } = require('./utils/utils')
 
 const { valiToken, valiPermission, valiEnjoyReading } = require('./middleware/middleware')
 
@@ -64,5 +65,8 @@ process.on('uncaughtException', function (err) {
   res.status(err.status || 500);
   res.send(err);
 });
+
+// 获取全部路由
+global.routes = listRoutes([], app._router.stack)
 
 module.exports = app;
