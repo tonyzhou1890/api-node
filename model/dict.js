@@ -35,6 +35,8 @@ async function _query(req, res, next) {
         if (result[j] && result[j].word === words[i]) {
           temp.push(result[j])
           j++
+        } else {
+          temp.push(null)
         }
       }
       response = errorMsg({ code: 0 })
