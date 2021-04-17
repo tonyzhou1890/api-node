@@ -32,7 +32,7 @@ async function _query(req, res, next) {
     if (Array.isArray(result)) {
       let temp = []
       for (let i = 0, j = 0, len = words.length; i < len; i++) {
-        if (result[j].word === words[i]) {
+        if (result[j] && result[j].word === words[i]) {
           temp.push(result[j])
           j++
         }
