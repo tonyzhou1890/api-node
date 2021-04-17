@@ -40,7 +40,22 @@ poemWhitelist.map((item, index) => {
   poemWhitelist[index] = poemPrefix + item
 })
 
+// 词典路由前缀
+const dictPrefix = '/dict'
+
+// 词典白名单路由
+const dictWhiteList = [
+  '/',
+  '/query'
+]
+
+// 将前缀添上
+dictWhiteList.map((item, index) => {
+  dictWhiteList[index] = dictPrefix + item
+})
+
 module.exports = {
   enjoyReadingWhitelist,
-  poemWhitelist
+  poemWhitelist,
+  dictWhiteList
 }

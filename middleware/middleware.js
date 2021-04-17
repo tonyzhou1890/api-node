@@ -6,7 +6,7 @@ const { query, unique } = require('../utils/query')
 const { errorMsg, formatTime } = require('../utils/utils')
 const { TypePermission, EnjoyReadingPermission } = require('../utils/setting')
 const { enjoyReadingGraylist } = require('./graylist')
-const { enjoyReadingWhitelist, poemWhitelist } = require('./whitelist')
+const { enjoyReadingWhitelist, poemWhitelist, dictWhiteList } = require('./whitelist')
 const humps = require('humps')
 
 /**
@@ -17,8 +17,9 @@ const whitelist = [
   '/register/account/register',
   '/register/account/login',
   ...enjoyReadingWhitelist,
-  '/poem',
-  ...poemWhitelist
+  '/poem/',
+  ...poemWhitelist,
+  ...dictWhiteList,
 ]
 
 /**
