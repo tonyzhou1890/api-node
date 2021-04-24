@@ -31,13 +31,18 @@ async function _query(req, res, next) {
     const result = await query(dict, sql)
     if (Array.isArray(result)) {
       let temp = []
+      let mapList = new Map()
+      // 将结果转为 map
+      for (let i = 0, len = result.length; i < len; i++) {
+        mapList.set(result[i].word, {
+          word: result[i].word,
+          phonetic: result[i].phonetic,
+          explain: result[i].word_explain
+        })
+      }
+      // 设置返回结果
       for (let i = 0, j = 0, len = words.length; i < len; i++) {
-        if (result[j] && result[j].word === words[i]) {
-          temp.push(result[j])
-          j++
-        } else {
-          temp.push(null)
-        }
+        temp.push(mapList.get(words[i]) || null)
       }
       response = errorMsg({ code: 0 })
       response.data = temp
